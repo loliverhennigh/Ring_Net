@@ -1,6 +1,7 @@
 
 import numpy as np
 import tensorflow as tf
+import matplotlib.pyplot as plt 
 
 import cannon as cn
 
@@ -14,22 +15,51 @@ tf.app.flags.DEFINE_integer('max_steps', 100000,
 def train():
   """Train ring_net for a number of steps."""
   with tf.Graph().as_default():
-    # Get images and labels for CIFAR-10.
+    # make dynamic system
     k = cn.Cannon()
+    # init in and out
+    x_0 = tf.placeholder(tf.float32, [None, 784])
     x_1 = tf.placeholder(tf.float32, [None, 784])
     x_2 = tf.placeholder(tf.float32, [None, 784])
-    # ring_net.inputs() 
+
+    # possible input dropout 
+    input_keep_prob = tf.placeholder("float")
+    x_0_norm = tf.nn.dropout(x_1, input_keep_prob)
+    x_1_norm = tf.nn.dropout(x_1, input_keep_prob)
+    x_2_norm = tf.nn.dropout(x_1, input_keep_prob)
+ 
+    # ok, because tensorflow is picky first I will define the graph for
+    #  x_1_m and then I will set reuse = true and get the other needed 
+    # values to train.
 
     # encoding
-    y_1 = ring_net.encoding(x_1)
+    y_1_m = ring_net.encoding(x_1_norm)
+    
     # dynamic system
-    y_2 = ring_net.dynamic_compression(y_1)
+    y_2_m = ring_net.dynamic_compression(y_1_m)
+ 
     # decoding 
-    x_2_out = ring_net.decoding(y_2)
+    x_2_m = ring_net.decoding(y_2_m)
 
-    # Build a Graph that trains the model with one batch of examples and
-    # updates the model parameters.
-    error = ring_net.loss(x_2, x_2_out)
+    # set reuse to true
+    tf.get_variable_scope().reuse_variables()
+
+    # get the other needed values for training
+    # 0 and 2 encoding
+    y_0_t = ring_net.encoding(x_0_norm)
+    y_2_b = ring_net.encoding(x_2_norm)
+    # just need 0 dynamic_compression
+    y_1_t = ring_net.dynamic_compression(y_0_t)
+
+    # calc errors 
+    #error_a = ring_net.loss(y_1_m, y_1_t)
+    #error_b = ring_net.loss(y_2_m, y_2_b)
+    #error_c = ring_net.loss(x_2_m, x_2)
+    #error_store = tf.add(error_a, error_b)
+    #error = tf.add(error_store, error_c)
+    error = ring_net.loss(x_2_m, x_2)
+    
+    # train hopefuly 
     train_op = ring_net.train(error)
 
     # List of all Variables
@@ -50,17 +80,16 @@ def train():
     #                                        graph_def=graph_def)
 
     for step in xrange(FLAGS.max_steps):
-      ins, outs = k.generate_28x28(1,50)
-      _ , loss_value = sess.run([train_op, error],feed_dict={x_inputs:ins[0], x_outputs:ins[0]})
+      x_0_true, x_1_true, x_2_true = k.generate_28x28(1,50)
+      _ , loss_value = sess.run([train_op, error],feed_dict={x_0:x_0_true[0], x_1:x_1_true[0], x_2:x_1_true[0], input_keep_prob:.8})
       print(loss_value)
 
       assert not np.isnan(loss_value), 'Model diverged with loss = NaN'
       if step%20 == 0:
-        #new_im = x_outputs.eval(feed_dict={x_inputs: ins[0,10:11], x_outputs: ins[0,10:11]})
-        #for j in range(15):
-        #  new_im = y_conv.eval(feed_dict={x: new_im, keep_prob: 1.0})
-        #plt.imshow(new_im.reshape((28,28)))
-        #plt.savefig('new_run_1.png')
+        new_im = x_2_m.eval(session = sess, feed_dict={x_1:x_1_true[0,10:11], input_keep_prob:1.0})
+        plt.imshow(new_im.reshape((28,28)))
+        #plt.imshow(x_1_true[0,40:41].reshape((28,28)))
+        plt.savefig('new_run_1.png')
         print("Saved")
 
       #if step % 100 == 0:

@@ -26,7 +26,7 @@ tf.app.flags.DEFINE_float('momentum', 0.9,
                           """momentum of learning rate""")
 tf.app.flags.DEFINE_float('alpha', 0.1,
                           """Leaky RElu param""")
-tf.app.flags.DEFINE_float('weight_decay', 0.0005,
+tf.app.flags.DEFINE_float('weight_decay', 0.0000,
                           """ """)
 tf.app.flags.DEFINE_float('dropout_hidden', 0.5,
                           """ dropout on hidden """)
@@ -137,7 +137,6 @@ def inference(images):
   #y_2 = tf.placeholder(tf.float32, [None, 64])
  
   # normalize and formate the first layer
-  #keep_prob = tf.placeholder("float") # do a little dropout to normalize
   x_1_norm = tf.nn.dropout(x_1, .8)
   x_1_image = tf.reshape(x_1_norm, [-1, 28, 28, 1])
   # Need the batch size for the transpose layers.
@@ -184,8 +183,7 @@ def encoding(inputs):
  
   # normalize and formate the first layer
   #keep_prob = tf.placeholder("float") # do a little dropout to normalize
-  x_1_norm = tf.nn.dropout(x_1, .8)
-  x_1_image = tf.reshape(x_1_norm, [-1, 28, 28, 1])
+  x_1_image = tf.reshape(x_1, [-1, 28, 28, 1])
   # conv1
   conv1 = _conv_layer(x_1_image, 5, 1, 32, 1)
   # conv2
@@ -195,9 +193,9 @@ def encoding(inputs):
   # conv4
   conv4 = _conv_layer(conv3, 2, 2, 64, 4)
   # fc5 
-  fc5 = _fc_layer(conv4, 512, 5, False, False)
+  fc5 = _fc_layer(conv4, 512, 5, True, False)
   # y_1 
-  y_1 = _fc_layer(conv4, 64, 6, True, False)
+  y_1 = _fc_layer(fc5, 256, 6, False, False)
 
   return y_1 
 
@@ -213,11 +211,11 @@ def dynamic_compression(inputs):
  
   # (start indexing at 10) -- I will change this in a bit
   # fc11
-  fc11 = _fc_layer(y_1, 512, 11, True, False)
+  fc11 = _fc_layer(y_1, 512, 11, False, False)
   # y_2 
-  y_2 = _fc_layer(fc11, 64, 11, True, False)
+  y_2 = _fc_layer(fc11, 256, 12, False, False)
 
-  return fc5 
+  return y_2 
 
 def decoding(inputs):
   """Builds decoding part of ring net.
@@ -230,9 +228,9 @@ def decoding(inputs):
   y_2 = inputs 
  
   # fc21
-  fc21 = _fc_layer(y_2, 512, 21, True, False)
+  fc21 = _fc_layer(y_2, 512, 21, False, False)
   # fc23
-  fc22 = _fc_layer(fc21, 64*7*7, 22, True, False)
+  fc22 = _fc_layer(fc21, 64*7*7, 22, False, False)
   conv22 = tf.reshape(fc22, [-1, 7, 7, 64])
   # conv23
   conv23 = _transpose_conv_layer(conv22, 2, 2, 64, 23)
@@ -252,7 +250,7 @@ def loss(output, correct_output):
   return error
   
 def train(total_loss):
-   lr = 1e-4
+   lr = 5e-4
    train_op = tf.train.AdamOptimizer(lr).minimize(total_loss)
    return train_op
 

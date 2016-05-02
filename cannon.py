@@ -25,7 +25,7 @@ class Cannon:
         self.x_pos = .0 
         self.y_pos = .5 
         self.x_vel = random.random()
-        self.y_vel = 5*random.random() 
+        self.y_vel = 5*(random.random()-.5) 
 
     # very basic physics
     def update_pos(self):
@@ -74,6 +74,29 @@ class Cannon:
             else:
                 x = x - 1
                 decisionOver2 = decisionOver2 + 2*(y-x) + 1
+
+        # now draw vel 
+        radius = 2
+        x0 = (self.x_vel * 4) // 1 
+        y0 = ((self.y_vel * 4) // 1) + 14
+        x = radius  
+        y = 0
+        decisionOver2 = 1 - x
+        while(y <= x):
+            im[(x+x0) % 28, (y+y0) % 28] = 1.0
+            im[(y+x0) % 28, (x+y0) % 28] = 1.0
+            im[(-x+x0) % 28, (y+y0) % 28] = 1.0
+            im[(-y+x0) % 28, (x+y0) % 28] = 1.0
+            im[(-x+x0) % 28, (-y+y0) % 28] = 1.0
+            im[(-y+x0) % 28, (-x+y0) % 28] = 1.0
+            im[(x+x0) % 28, (-y+y0) % 28] = 1.0
+            im[(y+x0) % 28, (-x+y0) % 28] = 1.0
+            y = y + 1
+            if (decisionOver2 <=0):
+                decisionOver2 = decisionOver2 + 2*y + 1
+            else:
+                x = x - 1
+                decisionOver2 = decisionOver2 + 2*(y-x) + 1
         im = im.reshape(28*28)
         return im 
 
@@ -81,19 +104,27 @@ class Cannon:
         # makes a np array of size batch_size x num_steps
         # this will be what most learing algorithms need
         # from there data
-        x = np.zeros([batch_size, num_steps, 28*28])
-        y = np.zeros([batch_size, num_steps, 28*28])
+        x_0 = np.zeros([batch_size, num_steps, 28*28])
+        x_1 = np.zeros([batch_size, num_steps, 28*28])
+        x_2 = np.zeros([batch_size, num_steps, 28*28])
         for i in xrange(batch_size):
             self.restart()
-            x[i, 0, :] = self.image_28x28()
-            for j in xrange(num_steps-1):
+            x_0[i, 0, :] = self.image_28x28()
+            self.update_pos()
+            x_0[i, 1, :] = self.image_28x28()
+            x_1[i, 0, :] = self.image_28x28()
+            for j in xrange(num_steps-2):
                 #time.sleep(.5)
                 self.update_pos()
-                x[i, j + 1, :] = self.image_28x28()
-                y[i, j, :] = x[i, j + 1, :] 
+                x_0[i, j + 2, :] = self.image_28x28()
+                x_1[i, j + 1, :] = x_0[i, j + 2, :] 
+                x_2[i, j, :] = x_0[i, j + 2, :] 
             self.update_pos()
-            y[i, num_steps-1, :] = self.image_28x28()
-        return x, y 
+            x_1[i, num_steps-1, :] = self.image_28x28()
+            x_2[i, num_steps-2, :] = self.image_28x28()
+            self.update_pos()
+            x_2[i, num_steps-1, :] = self.image_28x28()
+        return x_0, x_1, x_2
 
     def speed(self):
         return math.sqrt(self.x_vel ** 2 + self.y_vel ** 2)
