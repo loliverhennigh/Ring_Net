@@ -1,7 +1,10 @@
 
 import numpy as np
 import tensorflow as tf
+import matplotlib
+matplotlib.use("Agg")
 import matplotlib.pyplot as plt 
+import matplotlib.animation as animation 
 
 import cannon as cn
 
@@ -11,6 +14,8 @@ FLAGS = tf.app.flags.FLAGS
 
 tf.app.flags.DEFINE_integer('max_steps', 100000,
                             """number of batches to run""")
+
+
 
 def train():
   """Train ring_net for a number of steps."""
@@ -52,12 +57,12 @@ def train():
     y_1_t = ring_net.dynamic_compression(y_0_t)
 
     # calc errors 
-    #error_a = ring_net.loss(y_1_m, y_1_t)
-    #error_b = ring_net.loss(y_2_m, y_2_b)
-    #error_c = ring_net.loss(x_2_m, x_2)
-    #error_store = tf.add(error_a, error_b)
-    #error = tf.add(error_store, error_c)
-    error = ring_net.loss(x_2_m, x_2)
+    error_a = ring_net.loss(y_1_m, y_1_t)
+    error_b = ring_net.loss(y_2_m, y_2_b)
+    error_c = ring_net.loss(x_2_m, x_2)
+    error_store = tf.add(error_a, error_b)
+    error = tf.add(error_store, error_c)
+    #error = ring_net.loss(x_2_m, x_2)
     
     # train hopefuly 
     train_op = ring_net.train(error)
@@ -81,15 +86,20 @@ def train():
 
     for step in xrange(FLAGS.max_steps):
       x_0_true, x_1_true, x_2_true = k.generate_28x28(1,50)
-      _ , loss_value = sess.run([train_op, error],feed_dict={x_0:x_0_true[0], x_1:x_1_true[0], x_2:x_1_true[0], input_keep_prob:.8})
+      _ , loss_value = sess.run([train_op, error],feed_dict={x_0:x_0_true[0], x_1:x_1_true[0], x_2:x_2_true[0], input_keep_prob:.8})
       print(loss_value)
 
       assert not np.isnan(loss_value), 'Model diverged with loss = NaN'
-      if step%20 == 0:
+      if step%200 == 0:
         new_im = x_2_m.eval(session = sess, feed_dict={x_1:x_1_true[0,10:11], input_keep_prob:1.0})
-        plt.imshow(new_im.reshape((28,28)))
+        fig = plt.figure()
+        ims = []
+        for i in xrange(100):
+            new_im = x_2_m.eval(session = sess, feed_dict={x_1:new_im, input_keep_prob:1.0})
+            ims.append((plt.imshow(new_im.reshape((28,28))),))
+        im_ani = animation.ArtistAnimation(fig, ims, interval= 20, repeat_delay=3000, blit=True)
         #plt.imshow(x_1_true[0,40:41].reshape((28,28)))
-        plt.savefig('new_run_1.png')
+        im_ani.save('new_run_1.gif')
         print("Saved")
 
       #if step % 100 == 0:
