@@ -16,16 +16,15 @@ tf.app.flags.DEFINE_integer('max_steps', 100000,
                             """number of batches to run""")
 
 
-
 def train():
   """Train ring_net for a number of steps."""
   with tf.Graph().as_default():
     # make dynamic system
     k = cn.Cannon()
     # init in and out
-    x_0 = tf.placeholder(tf.float32, [None, 784])
-    x_1 = tf.placeholder(tf.float32, [None, 784])
-    x_2 = tf.placeholder(tf.float32, [None, 784])
+    x_0 = tf.placeholder(tf.float32, [None, 28, 28, 4])
+    x_1 = tf.placeholder(tf.float32, [None, 28, 28, 4])
+    x_2 = tf.placeholder(tf.float32, [None, 28, 28, 4])
 
     # possible input dropout 
     input_keep_prob = tf.placeholder("float")
@@ -86,6 +85,7 @@ def train():
 
     for step in xrange(FLAGS.max_steps):
       x_0_true, x_1_true, x_2_true = k.generate_28x28(1,50)
+      x_0_true, x_1_true, x_2_true = _convert_1frame_to_4frame(x_0_true, x_1_true, x_2_true) 
       _ , loss_value = sess.run([train_op, error],feed_dict={x_0:x_0_true[0], x_1:x_1_true[0], x_2:x_2_true[0], input_keep_prob:.8})
       print(loss_value)
 
@@ -94,12 +94,18 @@ def train():
         new_im = x_2_m.eval(session = sess, feed_dict={x_1:x_1_true[0,10:11], input_keep_prob:1.0})
         fig = plt.figure()
         ims = []
-        for i in xrange(100):
-            new_im = x_2_m.eval(session = sess, feed_dict={x_1:new_im, input_keep_prob:1.0})
-            ims.append((plt.imshow(new_im.reshape((28,28))),))
-        im_ani = animation.ArtistAnimation(fig, ims, interval= 20, repeat_delay=3000, blit=True)
+        #for i in xrange(20):
+        #   new_im = x_2_m.eval(session = sess, feed_dict={x_1:new_im, input_keep_prob:1.0})
+        #   ims.append((plt.imshow(new_im[:,:,:,0].reshape((28,28))),))
+        #m_ani = animation.ArtistAnimation(fig, ims, interval= 500, repeat_delay=3000, blit=True)
         #plt.imshow(x_1_true[0,40:41].reshape((28,28)))
-        im_ani.save('new_run_1.gif')
+        #m_ani.save('new_run_1.gif')
+        for i in xrange(4):
+            ims.append((plt.imshow(x_1_true[0,0:1,:,:,i].reshape((28,28))),))
+        m_ani = animation.ArtistAnimation(fig, ims, interval= 500, repeat_delay=3000, blit=True)
+         #plt.imshow(x_1_true[0,40:41].reshape((28,28)))
+        m_ani.save('new_run_1.gif')
+
         print("Saved")
 
       #if step % 100 == 0:
@@ -110,6 +116,22 @@ def train():
       #if step % 1000 == 0 or (step + 1) == FLAGS.max_steps:
       #  checkpoint_path = os.path.join(FLAGS.train_dir, 'YoloNeovision.ckpt')
       #  saver.save(sess, checkpoint_path, global_step=step)
+
+def _convert_1frame_to_4frame(x_0, x_1, x_2):
+    x_0_new = np.zeros([x_0.shape[0], x_0.shape[1] - 4, x_0.shape[2], x_0.shape[3], 4])
+    x_1_new = np.zeros([x_0.shape[0], x_0.shape[1] - 4, x_0.shape[2], x_0.shape[3], 4])
+    x_2_new = np.zeros([x_0.shape[0], x_0.shape[1] - 4, x_0.shape[2], x_0.shape[3], 4])
+    for i in xrange(x_0.shape[1]-4):
+        for j in xrange(4):
+            x_0_new[:, i, :, :, j]  = x_0[:, i+j, :, :]
+            x_1_new[:, i, :, :, j]  = x_1[:, i+j, :, :]
+            x_2_new[:, i, :, :, j]  = x_2[:, i+j, :, :]
+       
+    print x_0_new.shape 
+    return x_0_new, x_1_new, x_2_new
+
+
+
 
 def main(argv=None):  # pylint: disable=unused-argument
   train()

@@ -138,9 +138,9 @@ def inference(images):
  
   # normalize and formate the first layer
   x_1_norm = tf.nn.dropout(x_1, .8)
-  x_1_image = tf.reshape(x_1_norm, [-1, 28, 28, 1])
+  #x_1_image = tf.reshape(x_1_norm, [-1, 28, 28, 1])
   # Need the batch size for the transpose layers.
-  batch_size = tf.shape(x_1_image)[0]
+  batch_size = tf.shape(x_1_norm)[0]
  
   # conv1
   conv1 = _conv_layer(x_1_image, 5, 1, 32, 1)
@@ -179,11 +179,11 @@ def encoding(inputs):
   #--------- Making the net -----------
   # x_1 -> y_1 -> y_2 -> x_2
   # this peice x_1 -> y_1
-  x_1 = inputs 
+  x_1_image = inputs 
  
   # normalize and formate the first layer
   #keep_prob = tf.placeholder("float") # do a little dropout to normalize
-  x_1_image = tf.reshape(x_1, [-1, 28, 28, 1])
+  #x_1_image = tf.reshape(x_1, [-1, 28, 28, 1])
   # conv1
   conv1 = _conv_layer(x_1_image, 5, 1, 32, 1)
   # conv2
@@ -241,7 +241,7 @@ def decoding(inputs):
   # conv26
   conv26 = _transpose_conv_layer(conv25, 5, 1, 1, 26)
   # x_2 
-  x_2 = tf.reshape(conv26, [-1, 784])
+  x_2 = tf.reshape(conv26, [-1, 28, 28, 4])
 
   return x_2 
 
