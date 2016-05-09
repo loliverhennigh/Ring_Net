@@ -1,4 +1,6 @@
 
+import os.path
+
 import numpy as np
 import tensorflow as tf
 import matplotlib
@@ -12,6 +14,8 @@ import ring_net
 
 FLAGS = tf.app.flags.FLAGS
 
+tf.app.flags.DEFINE_string('train_dir', '/tmp/ring_train_store',
+                            """dir to store trained net""")
 tf.app.flags.DEFINE_integer('max_steps', 100000,
                             """number of batches to run""")
 
@@ -69,6 +73,9 @@ def train():
     # List of all Variables
     variables = tf.all_variables()
 
+    # Build a saver
+    saver = tf.train.Saver(tf.all_variables())
+    
     # Build an initialization operation to run below.
     init = tf.initialize_all_variables()
 
@@ -90,6 +97,11 @@ def train():
       print(loss_value)
 
       assert not np.isnan(loss_value), 'Model diverged with loss = NaN'
+
+      if step%1000 == 0:
+        checkpoint_path = os.path.join(FLAGS.train_dir, 'model.ckpt')
+        saver.save(sess, checkpoint_path, global_step=step)  
+
       if step%200 == 0:
         new_im = x_2_m.eval(session = sess, feed_dict={x_1:x_1_true[0,10:11], input_keep_prob:1.0})
         fig = plt.figure()
@@ -100,11 +112,12 @@ def train():
         #m_ani = animation.ArtistAnimation(fig, ims, interval= 500, repeat_delay=3000, blit=True)
         #plt.imshow(x_1_true[0,40:41].reshape((28,28)))
         #m_ani.save('new_run_1.gif')
-        for i in xrange(4):
-            ims.append((plt.imshow(x_1_true[0,0:1,:,:,i].reshape((28,28))),))
-        m_ani = animation.ArtistAnimation(fig, ims, interval= 500, repeat_delay=3000, blit=True)
-         #plt.imshow(x_1_true[0,40:41].reshape((28,28)))
-        m_ani.save('new_run_1.gif')
+        ##for i in xrange(4):
+        #    print
+        #    ims.append((plt.imshow(x_1_true[0,0:1,:,:,i].reshape((28,28))),))
+        #m_ani = animation.ArtistAnimation(fig, ims, interval= 500, repeat_delay=3000, blit=True)
+        # #plt.imshow(x_1_true[0,40:41].reshape((28,28)))
+        #m_ani.save('new_run_1.gif')
 
         print("Saved")
 
@@ -127,13 +140,15 @@ def _convert_1frame_to_4frame(x_0, x_1, x_2):
             x_1_new[:, i, :, :, j]  = x_1[:, i+j, :, :]
             x_2_new[:, i, :, :, j]  = x_2[:, i+j, :, :]
        
-    print x_0_new.shape 
     return x_0_new, x_1_new, x_2_new
 
 
 
 
 def main(argv=None):  # pylint: disable=unused-argument
+  if tf.gfile.Exists(FLAGS.train_dir):
+    tf.gfile.DeleteRecursively(FLAGS.train_dir)
+  tf.gfile.MakeDirs(FLAGS.train_dir)
   train()
 
 if __name__ == '__main__':

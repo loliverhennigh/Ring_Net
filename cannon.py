@@ -18,7 +18,7 @@ class Cannon:
         # you can play with this
         self.grav = 4.0
         self.dt = .01 
-        self.damp = 0 #probably set this to 0 for most applications
+        self.damp = 0.01 #probably set this to 0 for most applications
 
     # very basic physics
     def restart(self):
@@ -29,24 +29,25 @@ class Cannon:
 
     # very basic physics
     def update_pos(self):
-        self.x_pos = self.x_pos + self.dt * self.x_vel
-        self.y_pos = self.y_pos + self.dt * self.y_vel
-        self.x_vel = self.x_vel + self.dt * (self.grav - (self.damp * self.x_vel))
-        self.y_vel = self.y_vel + self.dt * self.damp * self.x_vel
-        #self.y_vel = self.y_vel + self.dt * (self.grav - (self.damp * self.y_vel))
-        # bounce
-        if (0 > self.x_pos):
-            self.x_vel = -self.x_vel 
-            self.x_pos = 0 
-        if (1 < self.x_pos):
-            self.x_vel = -self.x_vel 
-            self.x_pos = 1 
-        if (0 > self.y_pos):
-            self.y_vel = -self.y_vel 
-            self.y_pos = 0 
-        if (1 < self.y_pos):
-            self.y_vel = -self.y_vel 
-            self.y_pos = 1 
+        for i in xrange(5):
+            self.x_pos = self.x_pos + self.dt * self.x_vel
+            self.y_pos = self.y_pos + self.dt * self.y_vel
+            self.x_vel = self.x_vel + self.dt * (self.grav - (self.damp * self.x_vel))
+            self.y_vel = self.y_vel + self.dt * self.damp * self.x_vel
+            #self.y_vel = self.y_vel + self.dt * (self.grav - (self.damp * self.y_vel))
+            # bounce
+            if (0 > self.x_pos):
+                self.x_vel = -self.x_vel 
+                self.x_pos = 0 
+            if (1 < self.x_pos):
+                self.x_vel = -self.x_vel 
+                self.x_pos = 1 
+            if (0 > self.y_pos):
+                self.y_vel = -self.y_vel 
+                self.y_pos = 0 
+            if (1 < self.y_pos):
+                self.y_vel = -self.y_vel 
+                self.y_pos = 1 
  
     # generate pixell images
     def image_28x28(self):
@@ -76,7 +77,7 @@ class Cannon:
                 decisionOver2 = decisionOver2 + 2*(y-x) + 1
 
         # now draw vel 
-        radius = 2
+        """radius = 2
         x0 = (self.x_vel * 4) // 1 
         y0 = ((self.y_vel * 4) // 1) + 14
         x = radius  
@@ -96,17 +97,16 @@ class Cannon:
                 decisionOver2 = decisionOver2 + 2*y + 1
             else:
                 x = x - 1
-                decisionOver2 = decisionOver2 + 2*(y-x) + 1
-        im = im.reshape(28*28)
+                decisionOver2 = decisionOver2 + 2*(y-x) + 1"""
         return im 
 
     def generate_28x28(self, batch_size, num_steps):
         # makes a np array of size batch_size x num_steps
         # this will be what most learing algorithms need
         # from there data
-        x_0 = np.zeros([batch_size, num_steps, 28*28])
-        x_1 = np.zeros([batch_size, num_steps, 28*28])
-        x_2 = np.zeros([batch_size, num_steps, 28*28])
+        x_0 = np.zeros([batch_size, num_steps, 28, 28])
+        x_1 = np.zeros([batch_size, num_steps, 28, 28])
+        x_2 = np.zeros([batch_size, num_steps, 28, 28])
         for i in xrange(batch_size):
             self.restart()
             x_0[i, 0, :] = self.image_28x28()

@@ -239,7 +239,7 @@ def decoding(inputs):
   # conv25
   conv25 = _transpose_conv_layer(conv24, 2, 2, 32, 25)
   # conv26
-  conv26 = _transpose_conv_layer(conv25, 5, 1, 1, 26)
+  conv26 = _transpose_conv_layer(conv25, 5, 1, 4, 26)
   # x_2 
   x_2 = tf.reshape(conv26, [-1, 28, 28, 4])
 
