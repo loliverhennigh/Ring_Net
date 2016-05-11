@@ -74,8 +74,11 @@ def train():
     variables = tf.all_variables()
 
     # Build a saver
-    saver = tf.train.Saver(tf.all_variables())
-    
+    saver = tf.train.Saver(tf.all_variables())   
+    for i, variable in enumerate(variables):
+	print '----------------------------------------------'
+	print variable.name[:variable.name.index(':')]
+ 
     # Build an initialization operation to run below.
     init = tf.initialize_all_variables()
 
@@ -92,7 +95,7 @@ def train():
 
     for step in xrange(FLAGS.max_steps):
       x_0_true, x_1_true, x_2_true = k.generate_28x28(1,50)
-      x_0_true, x_1_true, x_2_true = _convert_1frame_to_4frame(x_0_true, x_1_true, x_2_true) 
+      x_0_true, x_1_true, x_2_true = convert_1frame_to_4frame(x_0_true, x_1_true, x_2_true) 
       _ , loss_value = sess.run([train_op, error],feed_dict={x_0:x_0_true[0], x_1:x_1_true[0], x_2:x_2_true[0], input_keep_prob:.8})
       print(loss_value)
 
@@ -109,7 +112,6 @@ def train():
         #for i in xrange(20):
         #   new_im = x_2_m.eval(session = sess, feed_dict={x_1:new_im, input_keep_prob:1.0})
         #   ims.append((plt.imshow(new_im[:,:,:,0].reshape((28,28))),))
-        #m_ani = animation.ArtistAnimation(fig, ims, interval= 500, repeat_delay=3000, blit=True)
         #plt.imshow(x_1_true[0,40:41].reshape((28,28)))
         #m_ani.save('new_run_1.gif')
         ##for i in xrange(4):
@@ -130,7 +132,7 @@ def train():
       #  checkpoint_path = os.path.join(FLAGS.train_dir, 'YoloNeovision.ckpt')
       #  saver.save(sess, checkpoint_path, global_step=step)
 
-def _convert_1frame_to_4frame(x_0, x_1, x_2):
+def convert_1frame_to_4frame(x_0, x_1, x_2):
     x_0_new = np.zeros([x_0.shape[0], x_0.shape[1] - 4, x_0.shape[2], x_0.shape[3], 4])
     x_1_new = np.zeros([x_0.shape[0], x_0.shape[1] - 4, x_0.shape[2], x_0.shape[3], 4])
     x_2_new = np.zeros([x_0.shape[0], x_0.shape[1] - 4, x_0.shape[2], x_0.shape[3], 4])

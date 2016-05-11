@@ -26,7 +26,7 @@ tf.app.flags.DEFINE_float('momentum', 0.9,
                           """momentum of learning rate""")
 tf.app.flags.DEFINE_float('alpha', 0.1,
                           """Leaky RElu param""")
-tf.app.flags.DEFINE_float('weight_decay', 0.0000,
+tf.app.flags.DEFINE_float('weight_decay', 0.0005,
                           """ """)
 tf.app.flags.DEFINE_float('dropout_hidden', 0.5,
                           """ dropout on hidden """)
