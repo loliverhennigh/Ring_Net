@@ -50,11 +50,11 @@ def eval_once(saver, input_test, x_1_loop, y_1_loop, y_2_loop, x_2_loop):
     ims_generated = []
     fig = plt.figure()
     y_2_approx = y_2_loop.eval(session = sess, feed_dict={x_1_loop:input_test[0,0:1,:,:,:]})
-    for step in xrange(input_test.shape[1]):
+    for step in xrange(input_test.shape[1]-1):
       # calc image from y_2
       print(step)
       new_im = x_2_loop.eval(session=sess, feed_dict={y_2_loop:y_2_approx})
-      new_im = new_im[:,:,:,0].reshape((28,28))
+      new_im = np.concatenate((new_im[:,:,:,0].reshape((28,28)), input_test[0,step+1:step+2,:,:,0].reshape((28,28))), axis=0)
       ims_generated.append((plt.imshow(new_im),))
       # use first step to calc next
       y_2_approx = y_2_loop.eval(session=sess, feed_dict={y_1_loop:y_2_approx})
