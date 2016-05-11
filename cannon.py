@@ -36,18 +36,18 @@ class Cannon:
             self.y_vel = self.y_vel + self.dt * self.damp * self.x_vel
             #self.y_vel = self.y_vel + self.dt * (self.grav - (self.damp * self.y_vel))
             # bounce
-            if (0 > self.x_pos):
+            if (0.1428 > self.x_pos):
                 self.x_vel = -self.x_vel 
-                self.x_pos = 0 
-            if (1 < self.x_pos):
+                self.x_pos = 0.143 
+            if ((1-0.1428) < self.x_pos):
                 self.x_vel = -self.x_vel 
-                self.x_pos = 1 
-            if (0 > self.y_pos):
+                self.x_pos = (1-0.143)
+            if (0.1428 > self.y_pos):
                 self.y_vel = -self.y_vel 
-                self.y_pos = 0 
-            if (1 < self.y_pos):
+                self.y_pos = 0.143 
+            if ((1-0.1428) < self.y_pos):
                 self.y_vel = -self.y_vel 
-                self.y_pos = 1 
+                self.y_pos = (1-0.143) 
  
     # generate pixell images
     def image_28x28(self):
