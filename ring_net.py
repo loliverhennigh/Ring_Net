@@ -123,54 +123,6 @@ def _fc_layer(inputs, hiddens, idx, flat = False, linear = False):
     ip = tf.add(tf.matmul(inputs_processed,weights),biases)
     return tf.maximum(FLAGS.alpha*ip,ip,name=str(idx)+'_fc')
 
-
-
-def inference(images):
-  """Build the ring network for 28x28 dynamical systems.
-  Args:
-    inputs: input not sure yet
-  """
-  x_1 = images
-  #x_1 = tf.placeholder(tf.float32, [None, 784])
-  #x_2 = tf.placeholder(tf.float32, [None, 784])
-  #y_1 = tf.placeholder(tf.float32, [None, 64])
-  #y_2 = tf.placeholder(tf.float32, [None, 64])
- 
-  # normalize and formate the first layer
-  x_1_norm = tf.nn.dropout(x_1, .8)
-  #x_1_image = tf.reshape(x_1_norm, [-1, 28, 28, 1])
-  # Need the batch size for the transpose layers.
-  batch_size = tf.shape(x_1_norm)[0]
- 
-  # conv1
-  conv1 = _conv_layer(x_1_image, 5, 1, 32, 1)
-  # conv2
-  conv2 = _conv_layer(conv1, 2, 2, 32, 2)
-  # conv3
-  conv3 = _conv_layer(conv2, 5, 1, 64, 3)
-  # conv4
-  conv4 = _conv_layer(conv3, 2, 2, 64, 4)
-  # conv5
-  conv5 = _conv_layer(conv4, 1, 1, 5, 5)
-  # conv6
-  conv6 = _transpose_conv_layer(conv5, 1, 1, 64, 6)
-  # conv7
-  conv7 = _transpose_conv_layer(conv6, 2, 2, 64, 7)
-  # conv8
-  conv8 = _transpose_conv_layer(conv7, 5, 1, 32, 8)
-  # conv9 
-  conv9 = _transpose_conv_layer(conv8, 2, 2, 32, 9)
-  # conv10 
-  conv10 = _transpose_conv_layer(conv9, 5, 1, 1, 10)
-  # reshape
-  
-  _x_2 = tf.reshape(conv10, [-1, 784])
-  
-  #error = tf.nn.l2_loss(x_2 - _x_2)
-  #train_step = tf.train.AdamOptimizer(1e-4).minimize(error) # I made the learning rate smaller then normal
-  #accuracy = tf.nn.l2_loss(x_2 - _x_2)
-  return _x_2
-
 def encoding(inputs):
   """Builds encoding part of ring net.
   Args:
@@ -195,7 +147,7 @@ def encoding(inputs):
   # fc5 
   fc5 = _fc_layer(conv4, 512, 5, True, False)
   # y_1 
-  y_1 = _fc_layer(fc5, 256, 6, False, False)
+  y_1 = _fc_layer(fc5, 64, 6, False, False)
 
   return y_1 
 
@@ -212,8 +164,10 @@ def dynamic_compression(inputs):
   # (start indexing at 10) -- I will change this in a bit
   # fc11
   fc11 = _fc_layer(y_1, 512, 11, False, False)
+  # fc12
+  fc12 = _fc_layer(fc11, 512, 12, False, False)
   # y_2 
-  y_2 = _fc_layer(fc11, 256, 12, False, False)
+  y_2 = _fc_layer(fc12, 64, 13, False, False)
 
   return y_2 
 

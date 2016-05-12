@@ -59,14 +59,51 @@ def train():
     # just need 0 dynamic_compression
     y_1_t = ring_net.dynamic_compression(y_0_t)
 
-    # calc errors 
-    error_a = ring_net.loss(y_1_m, y_1_t)
-    error_b = ring_net.loss(y_2_m, y_2_b)
-    error_c = ring_net.loss(x_2_m, x_2)
-    error_store = tf.add(error_a, error_b)
-    error = tf.add(error_store, error_c)
-    #error = ring_net.loss(x_2_m, x_2)
+    # add up errors
+    error_t = tf.mul(50.0, ring_net.loss(y_1_m, y_1_t))
+    error_m = ring_net.loss(x_2, x_2_m)
+    error_b = tf.mul(50.0, ring_net.loss(y_2_m, y_2_b))
+    error = tf.add_n([error_t, error_m, error_b])
+ 
+    """
+    ########### x_1 time ###########
+    # encoding
+    y_1_m = ring_net.encoding(x_1_norm)
+
+    # dynamic system
+    y_2_m = ring_net.dynamic_compression(y_1_m)
+
+    # decoding 
+    x_2_m = ring_net.decoding(y_2_m)
     
+    # set reuse to true
+    tf.get_variable_scope().reuse_variables()
+
+    ########### x_0 time ###########
+    # encoding
+    y_0_t = ring_net.encoding(x_0_norm)
+
+    # dynamic system
+    y_1_t = ring_net.dynamic_compression(y_0_t)
+    y_2_t = ring_net.dynamic_compression(y_1_t)
+
+    # decoding 
+    x_2_t = ring_net.decoding(y_2_t)
+ 
+    ########### x_2 time ###########
+    # encoding
+    y_2_b = ring_net.encoding(x_2_norm)
+
+    # decoding 
+    x_2_b = ring_net.decoding(y_2_b)
+
+    # add up errors
+    error_t = ring_net.loss(x_2, x_2_t)
+    error_m = ring_net.loss(x_2, x_2_m)
+    error_b = ring_net.loss(x_2, x_2_b)
+    error = tf.add_n([error_t, error_m, error_b])
+    """    
+
     # train hopefuly 
     train_op = ring_net.train(error)
 
@@ -86,13 +123,6 @@ def train():
     sess = tf.Session()
     sess.run(init)
 
-    # Start the queue runners.
-    #tf.train.start_queue_runners(sess=sess)
-
-    #graph_def = sess.graph.as_graph_def(add_shapes=True)
-    #summary_writer = tf.train.SummaryWriter(FLAGS.train_dir,
-    #                                        graph_def=graph_def)
-
     for step in xrange(FLAGS.max_steps):
       x_0_true, x_1_true, x_2_true = k.generate_28x28(1,50)
       x_0_true, x_1_true, x_2_true = convert_1frame_to_4frame(x_0_true, x_1_true, x_2_true) 
@@ -104,33 +134,7 @@ def train():
       if step%1000 == 0:
         checkpoint_path = os.path.join(FLAGS.train_dir, 'model.ckpt')
         saver.save(sess, checkpoint_path, global_step=step)  
-
-      if step%200 == 0:
-        new_im = x_2_m.eval(session = sess, feed_dict={x_1:x_1_true[0,10:11], input_keep_prob:1.0})
-        fig = plt.figure()
-        ims = []
-        #for i in xrange(20):
-        #   new_im = x_2_m.eval(session = sess, feed_dict={x_1:new_im, input_keep_prob:1.0})
-        #   ims.append((plt.imshow(new_im[:,:,:,0].reshape((28,28))),))
-        #plt.imshow(x_1_true[0,40:41].reshape((28,28)))
-        #m_ani.save('new_run_1.gif')
-        ##for i in xrange(4):
-        #    print
-        #    ims.append((plt.imshow(x_1_true[0,0:1,:,:,i].reshape((28,28))),))
-        #m_ani = animation.ArtistAnimation(fig, ims, interval= 500, repeat_delay=3000, blit=True)
-        # #plt.imshow(x_1_true[0,40:41].reshape((28,28)))
-        #m_ani.save('new_run_1.gif')
-
         print("Saved")
-
-      #if step % 100 == 0:
-      #  summary_str = sess.run(summary_op,feed_dict={keep_prob:FLAGS.dropout_hidden,keep_prob_input:FLAGS.dropout_input,lr:learning_rate})
-      #  summary_writer.add_summary(summary_str, step)
-
-      # Save the model checkpoint periodically.
-      #if step % 1000 == 0 or (step + 1) == FLAGS.max_steps:
-      #  checkpoint_path = os.path.join(FLAGS.train_dir, 'YoloNeovision.ckpt')
-      #  saver.save(sess, checkpoint_path, global_step=step)
 
 def convert_1frame_to_4frame(x_0, x_1, x_2):
     x_0_new = np.zeros([x_0.shape[0], x_0.shape[1] - 4, x_0.shape[2], x_0.shape[3], 4])
@@ -143,9 +147,6 @@ def convert_1frame_to_4frame(x_0, x_1, x_2):
             x_2_new[:, i, :, :, j]  = x_2[:, i+j, :, :]
        
     return x_0_new, x_1_new, x_2_new
-
-
-
 
 def main(argv=None):  # pylint: disable=unused-argument
   if tf.gfile.Exists(FLAGS.train_dir):
