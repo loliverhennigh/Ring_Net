@@ -18,7 +18,7 @@ class Cannon:
         # you can play with this
         self.grav = 4.0
         self.dt = .01 
-        self.damp = 0.01 #probably set this to 0 for most applications
+        self.damp = 0.00 #probably set this to 0 for most applications
 
     # very basic physics
     def restart(self):
@@ -38,16 +38,16 @@ class Cannon:
             # bounce
             if (0.1428 > self.x_pos):
                 self.x_vel = -self.x_vel 
-                self.x_pos = 0.143 
+                self.x_pos = 0.1428 
             if ((1-0.1428) < self.x_pos):
                 self.x_vel = -self.x_vel 
-                self.x_pos = (1-0.143)
+                self.x_pos = (1-0.1428)
             if (0.1428 > self.y_pos):
                 self.y_vel = -self.y_vel 
-                self.y_pos = 0.143 
+                self.y_pos = 0.1428 
             if ((1-0.1428) < self.y_pos):
                 self.y_vel = -self.y_vel 
-                self.y_pos = (1-0.143) 
+                self.y_pos = (1-0.1428) 
  
     # generate pixell images
     def image_28x28(self):
@@ -76,29 +76,45 @@ class Cannon:
                 x = x - 1
                 decisionOver2 = decisionOver2 + 2*(y-x) + 1
 
-        # now draw vel 
-        """radius = 2
-        x0 = (self.x_vel * 4) // 1 
-        y0 = ((self.y_vel * 4) // 1) + 14
-        x = radius  
-        y = 0
-        decisionOver2 = 1 - x
-        while(y <= x):
-            im[(x+x0) % 28, (y+y0) % 28] = 1.0
-            im[(y+x0) % 28, (x+y0) % 28] = 1.0
-            im[(-x+x0) % 28, (y+y0) % 28] = 1.0
-            im[(-y+x0) % 28, (x+y0) % 28] = 1.0
-            im[(-x+x0) % 28, (-y+y0) % 28] = 1.0
-            im[(-y+x0) % 28, (-x+y0) % 28] = 1.0
-            im[(x+x0) % 28, (-y+y0) % 28] = 1.0
-            im[(y+x0) % 28, (-x+y0) % 28] = 1.0
-            y = y + 1
-            if (decisionOver2 <=0):
-                decisionOver2 = decisionOver2 + 2*y + 1
-            else:
-                x = x - 1
-                decisionOver2 = decisionOver2 + 2*(y-x) + 1"""
         return im 
+
+    def generate_28x28x4(self, batch_size, num_steps):
+        cut_length = num_steps
+        if num_steps < 5:
+          cut_length = num_steps
+          num_steps = 5
+
+        x = np.zeros([batch_size, num_steps, 28, 28, 4])
+        self.restart()
+        for i in xrange(batch_size):
+            #self.restart()
+            x[i, 0, :, :, 0] = self.image_28x28()
+            self.update_pos()
+            x[i, 0, :, :, 1] = self.image_28x28()
+            x[i, 1, :, :, 0] = x[i, 0, :, :, 1] 
+            self.update_pos()
+            x[i, 0, :, :, 2] = self.image_28x28()
+            x[i, 1, :, :, 1] = x[i, 0, :, :, 2] 
+            x[i, 2, :, :, 0] = x[i, 0, :, :, 2] 
+            for j in xrange(num_steps-3):
+                self.update_pos()
+                x[i, j, :, :, 3] = self.image_28x28()
+                x[i, j+1, :, :, 2] = x[i, j, :, :, 3] 
+                x[i, j+2, :, :, 1] = x[i, j, :, :, 3] 
+                x[i, j+3, :, :, 0] = x[i, j, :, :, 3] 
+            self.update_pos()
+            x[i, num_steps-3, :, :, 3] = self.image_28x28()
+            x[i, num_steps-2, :, :, 2] = x[i, num_steps-3, :, :, 3] 
+            x[i, num_steps-1, :, :, 1] = x[i, num_steps-3, :, :, 3] 
+            self.update_pos()
+            x[i, num_steps-2, :, :, 3] = self.image_28x28()
+            x[i, num_steps-1, :, :, 2] = x[i, num_steps-2, :, :, 3] 
+            self.update_pos()
+            x[i, num_steps-1, :, :, 3] = self.image_28x28()
+
+        x = x[:, 0:cut_length, :, :, :]
+            
+        return x
 
     def generate_28x28(self, batch_size, num_steps):
         # makes a np array of size batch_size x num_steps
@@ -125,6 +141,7 @@ class Cannon:
             self.update_pos()
             x_2[i, num_steps-1, :] = self.image_28x28()
         return x_0, x_1, x_2
+
 
     def speed(self):
         return math.sqrt(self.x_vel ** 2 + self.y_vel ** 2)

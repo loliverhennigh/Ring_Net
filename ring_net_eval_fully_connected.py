@@ -21,7 +21,7 @@ tf.app.flags.DEFINE_string('eval_dir', '/home/hennigho/git_things/Ring_Net/ring_
                            """Directory where to write event logs.""")
 tf.app.flags.DEFINE_string('eval_data', 'test',
                            """Either 'test' or 'train_eval'.""")
-tf.app.flags.DEFINE_string('checkpoint_dir', '/home/hennigho/git_things/Ring_Net/ring_train_store',
+tf.app.flags.DEFINE_string('checkpoint_dir', '/home/hennigho/git_things/Ring_Net/fully_connected_ring_train_store',
                            """Directory where to read model checkpoints.""")
 tf.app.flags.DEFINE_string('video_name', 'new_video_1.mp4',
                            """name of the video you are saving""")
@@ -110,10 +110,10 @@ def evaluate():
     keep_prob = tf.placeholder("float")
 
     # encoding
-    y_1_m = ring_net.markov_encoding(x_1, keep_prob)
+    y_1_m = ring_net.encoding(x_1, keep_prob)
     
     # dynamic system
-    y_2_m = ring_net.markov_compression(y_1_m, keep_prob)
+    y_2_m = ring_net.fully_connected_compression(y_1_m, keep_prob)
  
     # decoding 
     x_2_m = ring_net.decoding(y_2_m)

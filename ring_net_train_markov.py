@@ -14,7 +14,7 @@ import ring_net
 
 FLAGS = tf.app.flags.FLAGS
 
-tf.app.flags.DEFINE_string('train_dir', '/home/hennigho/git_things/Ring_Net/ring_train_store',
+tf.app.flags.DEFINE_string('train_dir', '/home/hennigho/git_things/Ring_Net/markov_ring_train_store',
                             """dir to store trained net""")
 tf.app.flags.DEFINE_float('t_weight', '1.0',
                           """the weight or the t error""")
@@ -27,7 +27,7 @@ tf.app.flags.DEFINE_float('xi_weight', '1.0',
 tf.app.flags.DEFINE_float('yi_weight', '1.0',
                           """the weight or the yi error""")
 
-CURRICULUM_STEPS = [10, 10, 10, 10]
+CURRICULUM_STEPS = [100000, 10, 10, 10]
 CURRICULUM_SEQ = [2, 3, 4, 5]
 CURRICULUM_BATCH_SIZE = [50, 30, 20, 20]
 
@@ -56,11 +56,11 @@ def train(iteration):
 
     # first I will run once to create the graph and then set reuse to true so there is weight sharing when I roll out t
     # do f
-    y_0 = ring_net.encoding(x_drop[:, 0, :, :, :],keep_prob) 
+    y_0 = ring_net.markov_encoding(x_drop[:, 0, :, :, :],keep_prob) 
     # do g
     x_0 = ring_net.decoding(y_0) 
     # do T' 
-    y_1 = ring_net.fully_connected_compression(y_0, keep_prob) 
+    y_1 = ring_net.markov_compression(y_0) 
     # set weight sharing   
     tf.get_variable_scope().reuse_variables()
  
@@ -71,20 +71,21 @@ def train(iteration):
     # loop throught the seq
     for i in xrange(CURRICULUM_SEQ[iteration] - 1):
       # calc f for all in seq 
-      y_f_i = ring_net.encoding(x_drop[:, i+1, :, :, :],keep_prob)
+      y_f_i = ring_net.markov_encoding(x_drop[:, i+1, :, :, :],keep_prob)
       output_f.append(y_f_i)
       # calc g for all in seq
       x_g_i = ring_net.decoding(y_1) 
       output_g.append(x_g_i)
       # calc t for all in seq
       if i != (CURRICULUM_SEQ[iteration] - 2):
-        y_1 = ring_net.fully_connected_compression(y_1,keep_prob)
+        y_1 = ring_net.markov_compression(y_1)
         output_t.append(y_1)
       
     # calc error from (output_t - output_f)
-    output_f = tf.pack(output_f)
-    output_t = tf.pack(output_t)
-    error_tf = tf.mul(50.0, ring_net.loss(output_f, output_t)) # scaling by 50 right now but this will depend on what network I am training. requires further investigation
+    output_f = tf.concat(0, output_f)
+    output_t = tf.concat(0, output_t)
+    error_tf = tf.mul(50.0 * 64.0, ring_net.markov_loss(output_t, output_f)) 
+    error_ft = tf.mul(50.0 * 64.0, ring_net.markov_loss(output_f, output_t))
 
     # calc error from (x - output_g)
     output_g = tf.pack(output_g)
@@ -92,10 +93,10 @@ def train(iteration):
     error_xg = ring_net.loss(output_g, x)
 
     # add up errors
-    error = tf.add_n([error_tf, error_xg])
+    error = tf.add_n([error_tf, error_ft, error_xg])
 
     # train hopefuly 
-    train_op = ring_net.train(error, 5e-4)
+    train_op = ring_net.train(error, 1e-4)
 
     # List of all Variables
     variables = tf.all_variables()
@@ -131,9 +132,9 @@ def train(iteration):
     for step in xrange(CURRICULUM_STEPS[iteration]):
      # x_batch = k.generate_28x28x4(FLAGS.batch_size,FLAGS.seq_length)
       x_batch = k.generate_28x28x4(CURRICULUM_BATCH_SIZE[iteration],CURRICULUM_SEQ[iteration])
-      _ , loss_value, loss_tf, loss_xg = sess.run([train_op, error, error_tf, error_xg],feed_dict={x:x_batch, keep_prob:.8, input_keep_prob:0.85})
+      _ , loss_value, loss_tf, loss_ft, loss_xg = sess.run([train_op, error, error_tf, error_ft, error_xg],feed_dict={x:x_batch, keep_prob:.8, input_keep_prob:0.85})
       print(loss_value)
-      print(loss_tf, loss_xg)
+      print(loss_tf, loss_ft, loss_xg)
 
       assert not np.isnan(loss_value), 'Model diverged with loss = NaN'
 

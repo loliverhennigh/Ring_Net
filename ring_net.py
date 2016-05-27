@@ -12,12 +12,9 @@ import ring_net_input
 
 import tensorflow as tf
 import numpy as np
-import matplotlib.pyplot as plt 
 
 FLAGS = tf.app.flags.FLAGS
 
-tf.app.flags.DEFINE_integer('batch_size', 50,
-                            """the batch size""")
 
 # Constants describing the training process.
 tf.app.flags.DEFINE_float('moving_average_decay', 0.9999,
@@ -123,7 +120,7 @@ def _fc_layer(inputs, hiddens, idx, flat = False, linear = False):
     ip = tf.add(tf.matmul(inputs_processed,weights),biases)
     return tf.maximum(FLAGS.alpha*ip,ip,name=str(idx)+'_fc')
 
-def encoding(inputs):
+def encoding(inputs, keep_prob):
   """Builds encoding part of ring net.
   Args:
     inputs: input to encoder
@@ -146,12 +143,45 @@ def encoding(inputs):
   conv4 = _conv_layer(conv3, 2, 2, 64, 4)
   # fc5 
   fc5 = _fc_layer(conv4, 512, 5, True, False)
+  # dropout maybe
+  fc5_dropout = tf.nn.dropout(fc5, keep_prob)
   # y_1 
-  y_1 = _fc_layer(fc5, 64, 6, False, False)
+  y_1 = _fc_layer(fc5_dropout, 64, 6, False, False)
 
   return y_1 
 
-def dynamic_compression(inputs):
+def markov_encoding(inputs, keep_prob):
+  """Builds encoding part of ring net.
+  Args:
+    inputs: input to encoder
+  """
+  #--------- Making the net -----------
+  # x_1 -> y_1 -> y_2 -> x_2
+  # this peice x_1 -> y_1
+  x_1_image = inputs 
+ 
+  # normalize and formate the first layer
+  #keep_prob = tf.placeholder("float") # do a little dropout to normalize
+  #x_1_image = tf.reshape(x_1, [-1, 28, 28, 1])
+  # conv1
+  conv1 = _conv_layer(x_1_image, 5, 1, 32, 1)
+  # conv2
+  conv2 = _conv_layer(conv1, 2, 2, 32, 2)
+  # conv3
+  conv3 = _conv_layer(conv2, 5, 1, 64, 3)
+  # conv4
+  conv4 = _conv_layer(conv3, 2, 2, 64, 4)
+  # fc5 
+  fc5 = _fc_layer(conv4, 512, 5, True, False)
+  # dropout maybe
+  fc5_dropout = tf.nn.dropout(fc5, keep_prob)
+  # y_1 
+  y_1 = tf.nn.softmax(_fc_layer(fc5_dropout, 64, 6, False, True))
+
+  return y_1 
+
+
+def fully_connected_compression(inputs, keep_prob):
   """Builds compressed dynamical system part of the net.
   Args:
     inputs: input to system
@@ -166,8 +196,25 @@ def dynamic_compression(inputs):
   fc11 = _fc_layer(y_1, 512, 11, False, False)
   # fc12
   fc12 = _fc_layer(fc11, 512, 12, False, False)
+  # dropout maybe
+  fc12_dropout = tf.nn.dropout(fc12, keep_prob)
   # y_2 
-  y_2 = _fc_layer(fc12, 64, 13, False, False)
+  y_2 = _fc_layer(fc12_dropout, 64, 13, False, False)
+
+  return y_2 
+
+def markov_compression(inputs):
+  """Builds compressed dynamical system part of the net.
+  Args:
+    inputs: input to system
+  """
+  #--------- Making the net -----------
+  # x_1 -> y_1 -> y_2 -> x_2
+  # this peice y_1 -> y_2
+  y_1 = inputs 
+ 
+  # y_2 
+  y_2 = tf.nn.softmax(_fc_layer(y_1, 64, 13, False, True))
 
   return y_2 
 
@@ -202,9 +249,15 @@ def decoding(inputs):
 def loss(output, correct_output):
   error = tf.nn.l2_loss(output - correct_output)
   return error
+
+def markov_loss(output, correct_output):
+  index_max = tf.argmax(correct_output, 1)
+  correct_output_one_hot = tf.one_hot(index_max, 64, 1.0, 0.0)
+  error = tf.reduce_mean(-tf.reduce_sum(correct_output_one_hot * tf.log(correct_output), reduction_indices=[1]))
+  return error
   
-def train(total_loss):
-   lr = 5e-4
+  
+def train(total_loss, lr):
    train_op = tf.train.AdamOptimizer(lr).minimize(total_loss)
    return train_op
 

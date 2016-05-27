@@ -14,7 +14,7 @@ import ring_net
 
 FLAGS = tf.app.flags.FLAGS
 
-tf.app.flags.DEFINE_string('train_dir', '/home/hennigho/git_things/Ring_Net/ring_train_store',
+tf.app.flags.DEFINE_string('train_dir', '/home/hennigho/git_things/Ring_Net/fully_connected_ring_train_store',
                             """dir to store trained net""")
 tf.app.flags.DEFINE_float('t_weight', '1.0',
                           """the weight or the t error""")
@@ -27,7 +27,7 @@ tf.app.flags.DEFINE_float('xi_weight', '1.0',
 tf.app.flags.DEFINE_float('yi_weight', '1.0',
                           """the weight or the yi error""")
 
-CURRICULUM_STEPS = [10, 10, 10, 10]
+CURRICULUM_STEPS = [10001, 10001, 10001, 10001]
 CURRICULUM_SEQ = [2, 3, 4, 5]
 CURRICULUM_BATCH_SIZE = [50, 30, 20, 20]
 
