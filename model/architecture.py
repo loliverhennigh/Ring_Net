@@ -1,38 +1,12 @@
 
-"""Builds the ring network.
-
-Summary of available functions:
-
-  # Compute pics of the simulation runnig.
-  
-  # Create a graph to train on.
+"""functions used to construct different architectures  
 """
 
-import ring_net_input
 
 import tensorflow as tf
 import numpy as np
 
 FLAGS = tf.app.flags.FLAGS
-
-
-# Constants describing the training process.
-tf.app.flags.DEFINE_float('moving_average_decay', 0.9999,
-                          """The decay to use for the moving average""")
-tf.app.flags.DEFINE_float('momentum', 0.9,
-                          """momentum of learning rate""")
-tf.app.flags.DEFINE_float('alpha', 0.1,
-                          """Leaky RElu param""")
-tf.app.flags.DEFINE_float('weight_decay', 0.0005,
-                          """ """)
-tf.app.flags.DEFINE_float('dropout_hidden', 0.5,
-                          """ dropout on hidden """)
-tf.app.flags.DEFINE_float('dropout_input', 0.8,
-                          """ dropout on input """)
-
-def inputs():
-  return ring_net_input.inputs(FLAGS.batch_size)
-
 
 def _variable_on_cpu(name, shape, initializer):
   """Helper to create a Variable stored on CPU memory.
@@ -120,19 +94,17 @@ def _fc_layer(inputs, hiddens, idx, flat = False, linear = False):
     ip = tf.add(tf.matmul(inputs_processed,weights),biases)
     return tf.maximum(FLAGS.alpha*ip,ip,name=str(idx)+'_fc')
 
-def encoding(inputs, keep_prob):
+def encoding_28x28x4(inputs, keep_prob):
   """Builds encoding part of ring net.
   Args:
     inputs: input to encoder
+    keep_prob: dropout layer
   """
   #--------- Making the net -----------
   # x_1 -> y_1 -> y_2 -> x_2
   # this peice x_1 -> y_1
   x_1_image = inputs 
  
-  # normalize and formate the first layer
-  #keep_prob = tf.placeholder("float") # do a little dropout to normalize
-  #x_1_image = tf.reshape(x_1, [-1, 28, 28, 1])
   # conv1
   conv1 = _conv_layer(x_1_image, 5, 1, 32, 1)
   # conv2
@@ -150,7 +122,7 @@ def encoding(inputs, keep_prob):
 
   return y_1 
 
-def markov_encoding(inputs, keep_prob):
+def markov_encoding_28x28x4(inputs, keep_prob):
   """Builds encoding part of ring net.
   Args:
     inputs: input to encoder
@@ -176,12 +148,11 @@ def markov_encoding(inputs, keep_prob):
   # dropout maybe
   fc5_dropout = tf.nn.dropout(fc5, keep_prob)
   # y_1 
-  y_1 = tf.nn.softmax(_fc_layer(fc5_dropout, 64, 6, False, True))
+  y_1 = tf.nn.softmax(_fc_layer(fc5_dropout, 512, 6, False, True))
 
   return y_1 
 
-
-def fully_connected_compression(inputs, keep_prob):
+def compression_28x28x4(inputs, keep_prob):
   """Builds compressed dynamical system part of the net.
   Args:
     inputs: input to system
@@ -203,7 +174,7 @@ def fully_connected_compression(inputs, keep_prob):
 
   return y_2 
 
-def markov_compression(inputs):
+def markov_compression_28x28x4(inputs):
   """Builds compressed dynamical system part of the net.
   Args:
     inputs: input to system
@@ -214,11 +185,11 @@ def markov_compression(inputs):
   y_1 = inputs 
  
   # y_2 
-  y_2 = tf.nn.softmax(_fc_layer(y_1, 64, 13, False, True))
+  y_2 = tf.nn.softmax(_fc_layer(y_1, 512, 13, False, True))
 
   return y_2 
 
-def decoding(inputs):
+def decoding_28x28x4(inputs):
   """Builds decoding part of ring net.
   Args:
     inputs: input to decoder
@@ -246,34 +217,3 @@ def decoding(inputs):
 
   return x_2 
 
-def loss(output, correct_output):
-  error = tf.nn.l2_loss(output - correct_output)
-  return error
-
-def markov_loss(output, correct_output):
-  index_max = tf.argmax(correct_output, 1)
-  correct_output_one_hot = tf.one_hot(index_max, 64, 1.0, 0.0)
-  error = tf.reduce_mean(-tf.reduce_sum(correct_output_one_hot * tf.log(correct_output), reduction_indices=[1]))
-  return error
-  
-  
-def train(total_loss, lr):
-   train_op = tf.train.AdamOptimizer(lr).minimize(total_loss)
-   return train_op
-
-'''
-for i in range(20000):
-  x_input, y_input = k.generate_28x28(1,50)
-  if i%20 == 0:
-    #train_accuracy = accuracy.eval(feed_dict={
-    #    x:x_input[0], y_:x_input[0], keep_prob: 1.0})
-    #print("step %d, training accuracy %g"%(i, train_accuracy))
-    print("Saving test image to new_run_1.png")
-    #new_im = y_conv.eval(feed_dict={x: x_input[0,10:11], y_: x_input[0,10:11], keep_prob: 1.0})
-    #new_im = _x_2.eval(feed_dict={x: x_input[0,10:11], keep_prob: 1.0})
-    #plt.imshow(new_im.reshape((28,28)))
-    #plt.savefig('new_run_1.png')
-    #print("Saved")
-  train_step.run(feed_dict={x: x_input[0], y_: x_input[0], keep_prob: 0.8})
-
-'''

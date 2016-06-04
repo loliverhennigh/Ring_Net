@@ -1,7 +1,4 @@
 
-
-
-
 import math
 
 import numpy as np
@@ -21,9 +18,9 @@ tf.app.flags.DEFINE_string('eval_dir', '/home/hennigho/git_things/Ring_Net/ring_
                            """Directory where to write event logs.""")
 tf.app.flags.DEFINE_string('eval_data', 'test',
                            """Either 'test' or 'train_eval'.""")
-tf.app.flags.DEFINE_string('checkpoint_dir', '/home/hennigho/git_things/Ring_Net/ring_train_store',
+tf.app.flags.DEFINE_string('checkpoint_dir', '/home/hennigho/git_things/Ring_Net/markov_ring_train_store',
                            """Directory where to read model checkpoints.""")
-tf.app.flags.DEFINE_string('video_name', 'new_video_1.mp4',
+tf.app.flags.DEFINE_string('video_name', 'new_video_1_markov.mp4',
                            """name of the video you are saving""")
 
 writer = animation.writers['ffmpeg'](fps=30)
@@ -67,7 +64,19 @@ def eval_once(saver, input_test, x_1_loop, y_1_loop, y_2_loop, x_2_loop, keep_pr
       return
     ims_generated = []
     fig = plt.figure()
+    state = 0
     y_2_approx = y_2_loop.eval(session = sess, feed_dict={x_1_loop:input_test[0,0:1,:,:,:], keep_prob:1.0})
+    print(y_2_approx.shape)
+    #print(lksdjflkdj)
+    index_max = np.argmax(y_2_approx, axis=1)
+    index_max[0] = int(state)
+    state = state+1
+    print(index_max)
+    y_2_approx = np.zeros(y_2_approx.shape)
+    y_2_approx[np.arange(1), index_max] = 1.0
+    #print(y_2_approx.shape)    
+ 
+    #y_2_approx = tf.one_hot(index_max, 512, 1.0, 0.0)
     x_2_full_1 = x_2_loop.eval(session = sess, feed_dict={x_1_loop:input_test[0,0:1,:,:,:], keep_prob:1.0})
 
     x_2_full_2 = x_2_loop.eval(session = sess, feed_dict={x_1_loop:input_test[0,0:1,:,:,:], keep_prob:1.0})
@@ -92,6 +101,14 @@ def eval_once(saver, input_test, x_1_loop, y_1_loop, y_2_loop, x_2_loop, keep_pr
       ims_generated.append((plt.imshow(new_im),))
       # use first step to calc next
       y_2_approx = y_2_loop.eval(session=sess, feed_dict={y_1_loop:y_2_approx, keep_prob:1.0})
+      index_max = np.argmax(y_2_approx, axis=1)
+      index_max[0] = state 
+      state = state+1
+      y_2_approx = np.zeros(y_2_approx.shape)
+      y_2_approx[np.arange(1), index_max] = 1.0
+      #print(y_2_approx.shape)    
+ 
+
     m_ani = animation.ArtistAnimation(fig, ims_generated, interval= 5000, repeat_delay=3000, blit=True)
     print(FLAGS.video_name)
     m_ani.save(FLAGS.video_name, writer=writer)
@@ -113,7 +130,7 @@ def evaluate():
     y_1_m = ring_net.markov_encoding(x_1, keep_prob)
     
     # dynamic system
-    y_2_m = ring_net.markov_compression(y_1_m, keep_prob)
+    y_2_m = ring_net.markov_compression(y_1_m)
  
     # decoding 
     x_2_m = ring_net.decoding(y_2_m)
