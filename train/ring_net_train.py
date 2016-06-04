@@ -16,7 +16,7 @@ import model.ring_net as ring_net
 
 FLAGS = tf.app.flags.FLAGS
 
-tf.app.flags.DEFINE_string('train_dir', '/home/hennigho/git_things/Ring_Net/fully_connected_ring_train_store_2',
+tf.app.flags.DEFINE_string('train_dir', '../checkpoints/fully_connected_ring_train_store',
                             """dir to store trained net""")
 CURRICULUM_STEPS = [100001, 100001]
 CURRICULUM_SEQ = [2, 3]
