@@ -59,6 +59,7 @@ def markov_unwrap(inputs, keep_prob, seq_length):
   # first I will run once to create the graph and then set reuse to true so there is weight sharing when I roll out t
   # do f
   y_0 = ring_net.encoding(inputs[:, 0, :, :, :],keep_prob) 
+  y_0 = ring_net.one_hot(y_0)
   # do g
   x_0 = ring_net.decoding(y_0) 
   # do T' 
@@ -69,6 +70,7 @@ def markov_unwrap(inputs, keep_prob, seq_length):
   # append these to the lists (I dont need output f. there will be seq_length elements of output_g and seq_length-1 of output_t and output_f)
   output_g.append(x_0)
   output_t.append(y_1)
+  y_1 = ring_net.one_hot(y_1)
 
   # loop throught the seq
   for i in xrange(seq_length - 1):
@@ -82,6 +84,7 @@ def markov_unwrap(inputs, keep_prob, seq_length):
     if i != (seq_length - 2):
       y_1 = ring_net.compression(y_1, keep_prob)
       output_t.append(y_1)
+      y_1 = ring_net.one_hot(y_1)
     
   # compact output_f and output_t 
   output_f = tf.concat(0, output_f)

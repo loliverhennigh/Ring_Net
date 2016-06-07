@@ -128,8 +128,8 @@ def loss(inputs, output_t, output_g, output_f):
     error_tf = tf.mul(50.0, tf.nn.l2_loss(output_f - output_t)) # scaling by 50 right now but this will depend on what network I am training. requires further investigation
     error_xg = tf.nn.l2_loss(output_g - inputs)
   elif FLAGS.model == "markov_28x28x4": 
-    error_tf = tf.mul(50.0 * 10.0, cross_entropy_loss(output_t, output_f)) 
-    error_ft = tf.mul(50.0 * 10.0, cross_entropy_loss(output_f, output_t))
+    error_tf = tf.mul(50.0 * 0.0, cross_entropy_loss(output_t, output_f)) 
+    error_ft = tf.mul(50.0 * 0.0, cross_entropy_loss(output_f, output_t))
     error_tf = tf.add_n([error_tf, error_ft])
     error_xg = tf.nn.l2_loss(output_g - inputs)
   error = tf.cond(error_tf > error_xg, lambda: error_tf, lambda: error_xg)
@@ -142,11 +142,14 @@ def l2_loss(output, correct_output):
 
 def cross_entropy_loss(output, correct_output):
   """ cross entropy loss by converting correcte_output to a one hot vector"""
-  index_max = tf.argmax(correct_output, 1)
-  output_shape = output.get_shape().as_list()[1]
-  correct_output_one_hot = tf.one_hot(index_max, output_shape, 1.0, 0.0)
+  correct_output_one_hot = one_hot(correct_output)
   error = tf.reduce_mean(-tf.reduce_sum(correct_output_one_hot * tf.log(correct_output), reduction_indices=[1]))
   return error
+
+def one_hot(inputs):
+  index_max = tf.argmax(inputs, 1)
+  input_shape = inputs.get_shape().as_list()[1]
+  return tf.one_hot(index_max, input_shape, 1.0, 0.0)
  
 def train(total_loss, lr):
    train_op = tf.train.AdamOptimizer(lr).minimize(total_loss)

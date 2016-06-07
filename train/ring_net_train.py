@@ -16,7 +16,7 @@ import model.ring_net as ring_net
 
 FLAGS = tf.app.flags.FLAGS
 
-tf.app.flags.DEFINE_string('train_dir', '../checkpoints/fully_connected_ring_train_store',
+tf.app.flags.DEFINE_string('train_dir', '../checkpoints/train_store_',
                             """dir to store trained net""")
 CURRICULUM_STEPS = [100001, 100001]
 CURRICULUM_SEQ = [2, 3]
@@ -66,7 +66,7 @@ def train(iteration):
     if iteration != 0:
       variables_to_restore = tf.all_variables()
       saver = tf.train.Saver(variables_to_restore)
-      ckpt = tf.train.get_checkpoint_state(FLAGS.train_dir)
+      ckpt = tf.train.get_checkpoint_state(FLAGS.train_dir+FLAGS.model)
       if ckpt and ckpt.model_checkpoint_path:
         saver.restore(sess, ckpt.model_checkpoint_path)
         print("restored file from " + ckpt.model_checkpoint_path)
@@ -75,21 +75,21 @@ def train(iteration):
 
     for step in xrange(CURRICULUM_STEPS[iteration]):
       x_batch = k.generate_28x28x4(CURRICULUM_BATCH_SIZE[iteration],CURRICULUM_SEQ[iteration])
-      _ , loss_value = sess.run([train_op, error],feed_dict={x:x_batch, keep_prob:.8, input_keep_prob:0.85})
+      _ , loss_value = sess.run([train_op, error],feed_dict={x:x_batch, keep_prob:1.0, input_keep_prob:1.0})
       print(loss_value)
 
       assert not np.isnan(loss_value), 'Model diverged with loss = NaN'
 
       if step%1000 == 0:
-        checkpoint_path = os.path.join(FLAGS.train_dir, 'model.ckpt')
+        checkpoint_path = os.path.join(FLAGS.train_dir + FLAGS.model, 'model.ckpt')
         saver.save(sess, checkpoint_path, global_step=step)  
         print("saved!")
         print(loss_value)
 
 def main(argv=None):  # pylint: disable=unused-argument
-  if tf.gfile.Exists(FLAGS.train_dir):
-    tf.gfile.DeleteRecursively(FLAGS.train_dir)
-  tf.gfile.MakeDirs(FLAGS.train_dir)
+  if tf.gfile.Exists(FLAGS.train_dir + FLAGS.model):
+    tf.gfile.DeleteRecursively(FLAGS.train_dir + FLAGS.model)
+  tf.gfile.MakeDirs(FLAGS.train_dir + FLAGS.model)
   for i in xrange(len(CURRICULUM_STEPS)):
     train(i)
 
