@@ -1,15 +1,13 @@
 
-import numpy as np
-import tensorflow as tf
-import cv2
 
-# name of goldfish data
-cap = cv2.VideoCapture("goldfish.webm")
-
-# number of frames per data point
-FRAMES_NUM = 4
-
-# resize shape
+import numpy as np 
+import tensorflow as tf 
+import cv2 
+# name of goldfish data 
+cap = cv2.VideoCapture("test.webm") 
+# number of frames per data point 
+FRAMES_NUM = 4 
+# resize shape 
 SHAPE = (78,78)
 
 # create tf writer
@@ -26,6 +24,12 @@ while(True):
   # create frames
   for i in xrange(FRAMES_NUM):
     ret, frame = cap.read()
+    if not ret:
+      print("starting over")
+      cap.release()
+      cap = cv2.VideoCapture("test.webm")
+      ret, frame = cap.read()
+      print(ret)
     frame = cv2.resize(frame, SHAPE, interpolation = cv2.INTER_CUBIC)
     frames[:, :, i:i+3] = frame 
   # process frame for saving

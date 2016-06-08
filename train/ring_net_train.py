@@ -12,6 +12,7 @@ import tensorflow as tf
 import sys
 sys.path.append('../')
 import systems.cannon as cn
+import systems.video as vi 
 import model.ring_net as ring_net
 
 FLAGS = tf.app.flags.FLAGS
@@ -27,7 +28,10 @@ def train(iteration):
   """Train ring_net for a number of steps."""
   with tf.Graph().as_default():
     # make dynamic system
-    k = cn.Cannon()
+    if FLAGS.system == "cannon":
+      k = cn.Cannon()
+    elif FLAGS.system == "video":
+      k = vi.Video()
     # make inputs
     x = ring_net.inputs(CURRICULUM_BATCH_SIZE[iteration], CURRICULUM_SEQ[iteration]) 
     # possible input dropout 
@@ -75,12 +79,12 @@ def train(iteration):
 
     for step in xrange(CURRICULUM_STEPS[iteration]):
       x_batch = k.generate_28x28x4(CURRICULUM_BATCH_SIZE[iteration],CURRICULUM_SEQ[iteration])
-      _ , loss_value = sess.run([train_op, error],feed_dict={x:x_batch, keep_prob:1.0, input_keep_prob:1.0})
+      _ , loss_value = sess.run([train_op, error],feed_dict={x:x_batch, keep_prob:.8, input_keep_prob:.85})
       print(loss_value)
 
       assert not np.isnan(loss_value), 'Model diverged with loss = NaN'
 
-      if step%1000 == 0:
+      if step%10 == 0:
         checkpoint_path = os.path.join(FLAGS.train_dir + FLAGS.model, 'model.ckpt')
         saver.save(sess, checkpoint_path, global_step=step)  
         print("saved!")

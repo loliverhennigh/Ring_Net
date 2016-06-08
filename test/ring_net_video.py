@@ -11,6 +11,7 @@ import matplotlib.animation as animation
 import sys
 sys.path.append('../')
 import systems.cannon as cn
+import systems.video as vi 
 
 import model.ring_net as ring_net
 
@@ -31,7 +32,10 @@ def evaluate():
   """ Eval the system"""
   with tf.Graph().as_default():
     # make dynamic system
-    k = cn.Cannon()
+    if FLAGS.system == "cannon":
+      k = cn.Cannon()
+    elif FLAGS.system == "video":
+      k = vi.Video()
     # make inputs
     x = ring_net.inputs(1, NUM_FRAMES) 
     # unwrap it
@@ -61,7 +65,7 @@ def evaluate():
     for step in xrange(NUM_FRAMES):
       # calc image from y_2
       print(step)
-      new_im = np.concatenate((generated_seq[step, :, :, 0].reshape((28,28)), x_batch[step,:,:,0].reshape((28,28))), axis=0)
+      new_im = np.concatenate((generated_seq[step, :, :, 0].reshape((28,28))/np.amax(generated_seq[step, :, :, 0]), x_batch[step,:,:,0].reshape((28,28))/np.amax(x_batch[step,:,:,0])), axis=0)
       ims_generated.append((plt.imshow(new_im),))
     m_ani = animation.ArtistAnimation(fig, ims_generated, interval= 5000, repeat_delay=3000, blit=True)
     print(FLAGS.video_name)

@@ -19,6 +19,10 @@ FLAGS = tf.app.flags.FLAGS
 
 
 # Constants describing the training process.
+tf.app.flags.DEFINE_string('model', 'fully_connected_28x28x4',
+                           """ model name to train """)
+tf.app.flags.DEFINE_string('system', 'video',
+                           """ system to compress """)
 tf.app.flags.DEFINE_float('moving_average_decay', 0.9999,
                           """The decay to use for the moving average""")
 tf.app.flags.DEFINE_float('momentum', 0.9,
@@ -31,8 +35,6 @@ tf.app.flags.DEFINE_float('dropout_hidden', 0.5,
                           """ dropout on hidden """)
 tf.app.flags.DEFINE_float('dropout_input', 0.8,
                           """ dropout on input """)
-tf.app.flags.DEFINE_string('model', 'fully_connected_28x28x4',
-                           """ model name to train """)
 # possible models to train are
 # markov_28x28x4
 # fully_connected_28x28x4
