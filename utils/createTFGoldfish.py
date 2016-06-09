@@ -4,7 +4,7 @@ import numpy as np
 import tensorflow as tf 
 import cv2 
 # name of goldfish data 
-video_file = "goldfish.webm"
+video_file = "circle.mp4"
 cap = cv2.VideoCapture(video_file) 
 
 # seq length
@@ -14,10 +14,10 @@ SEQ_LENGTH = 2
 FRAMES_NUM = 4 
 
 # resize shape 
-SHAPE = (28,28)
+SHAPE = (200,200)
 
 # create tf writer
-record_filename = "goldfish_28x28_" + str(SEQ_LENGTH) + ".tfrecords"
+record_filename = "circle_28x28_" + str(SEQ_LENGTH) + ".tfrecords"
 writer = tf.python_io.TFRecordWriter(record_filename)
 
 # the stored frames
@@ -51,9 +51,9 @@ while(not end):
   writer.write(example.SerializeToString()) 
 
   # Display the resulting frame
-  #cv2.imshow('frame',frames[:,:,0])
-  #if cv2.waitKey(1) & 0xFF == ord('q'):
-  #    break
+  cv2.imshow('frame',frames[:,:,0])
+  if cv2.waitKey(1) & 0xFF == ord('q'):
+      break
   ind = ind + 1
   print(ind)
 

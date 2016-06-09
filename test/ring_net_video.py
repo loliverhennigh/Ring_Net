@@ -46,7 +46,7 @@ def evaluate():
     variables_to_restore = tf.all_variables()
     saver = tf.train.Saver(variables_to_restore)
     sess = tf.Session()
-    ckpt = tf.train.get_checkpoint_state(FLAGS.checkpoint_dir + FLAGS.model)
+    ckpt = tf.train.get_checkpoint_state(FLAGS.checkpoint_dir + FLAGS.model + FLAGS.system)
     if ckpt and ckpt.model_checkpoint_path:
       saver.restore(sess, ckpt.model_checkpoint_path)
       print("restored file from " + ckpt.model_checkpoint_path)

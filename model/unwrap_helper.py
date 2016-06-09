@@ -49,7 +49,6 @@ def fully_connected_unwrap(inputs, keep_prob, seq_length):
   output_g = tf.transpose(output_g, perm=[1,0,2,3,4]) # this will make it look like x (I should check to see if transpose is not flipping or doing anything funny)
   return output_t, output_g, output_f 
 
-
 def markov_unwrap(inputs, keep_prob, seq_length):
   # make a list for the outputs
   output_t = []
@@ -85,7 +84,7 @@ def markov_unwrap(inputs, keep_prob, seq_length):
       y_1 = ring_net.compression(y_1, keep_prob)
       output_t.append(y_1)
       y_1 = ring_net.one_hot(y_1)
-    
+ 
   # compact output_f and output_t 
   output_f = tf.concat(0, output_f)
   output_t = tf.concat(0, output_t)
@@ -95,7 +94,4 @@ def markov_unwrap(inputs, keep_prob, seq_length):
   output_g = tf.transpose(output_g, perm=[1,0,2,3,4]) # this will make it look like x (I should check to see if transpose is not flipping or doing anything funny)
 
   return output_t, output_g, output_f 
-
-
-
 

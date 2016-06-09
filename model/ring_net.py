@@ -129,12 +129,18 @@ def loss(inputs, output_t, output_g, output_f):
   if FLAGS.model == "fully_connected_28x28x4": 
     error_tf = tf.mul(50.0, tf.nn.l2_loss(output_f - output_t)) # scaling by 50 right now but this will depend on what network I am training. requires further investigation
     error_xg = tf.nn.l2_loss(output_g - inputs)
+    tf.scalar_summary('error_tf', error_tf)
+    tf.scalar_summary('error_xg', error_xg)
+    error = tf.cond(error_tf > error_xg, lambda: error_tf, lambda: error_xg)
   elif FLAGS.model == "markov_28x28x4": 
-    error_tf = tf.mul(50.0 * 0.0, cross_entropy_loss(output_t, output_f)) 
-    error_ft = tf.mul(50.0 * 0.0, cross_entropy_loss(output_f, output_t))
-    error_tf = tf.add_n([error_tf, error_ft])
+    error_tf = tf.mul(500.0, cross_entropy_loss(output_t, output_f))
+    error_ft = tf.mul(500.0, cross_entropy_loss(output_f, output_t))
     error_xg = tf.nn.l2_loss(output_g - inputs)
-  error = tf.cond(error_tf > error_xg, lambda: error_tf, lambda: error_xg)
+    tf.scalar_summary('error_tf', error_tf)
+    tf.scalar_summary('error_ft', error_ft)
+    tf.scalar_summary('error_xg', error_xg)
+    error = tf.add_n([error_tf, error_ft, error_xg])
+  tf.scalar_summary('error', error)
   return error
 
 def l2_loss(output, correct_output):
@@ -149,9 +155,16 @@ def cross_entropy_loss(output, correct_output):
   return error
 
 def one_hot(inputs):
-  index_max = tf.argmax(inputs, 1)
-  input_shape = inputs.get_shape().as_list()[1]
-  return tf.one_hot(index_max, input_shape, 1.0, 0.0)
+  batch_size = inputs.get_shape().as_list()[0]
+  max_value = tf.reduce_max(inputs, reduction_indices=[1])
+  inv_max_value = tf.div(1.0, max_value)
+  inv_max_value = tf.expand_dims(inv_max_value, 1)
+  inputs = tf.mul(inv_max_value, inputs)
+  inputs = tf.square(inputs)
+  inputs = tf.square(inputs)
+  inputs = tf.square(inputs)
+  inputs = tf.square(inputs)
+  return inputs
  
 def train(total_loss, lr):
    train_op = tf.train.AdamOptimizer(lr).minimize(total_loss)

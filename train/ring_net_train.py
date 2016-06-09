@@ -1,5 +1,6 @@
 
 import os.path
+import time
 
 import numpy as np
 import tensorflow as tf
@@ -44,7 +45,7 @@ def train(iteration):
     # calc error
     error = ring_net.loss(x, output_t, output_g, output_f)
     # train hopefuly 
-    train_op = ring_net.train(error, 5e-4)
+    train_op = ring_net.train(error, 1e-4)
     
     # List of all Variables
     variables = tf.all_variables()
@@ -54,6 +55,9 @@ def train(iteration):
     for i, variable in enumerate(variables):
 	print '----------------------------------------------'
 	print variable.name[:variable.name.index(':')]
+
+    # Summary op
+    summary_op = tf.merge_all_summaries()
  
     # Build an initialization operation to run below.
     if iteration == 0:
@@ -65,35 +69,43 @@ def train(iteration):
     # init if this is the very time training
     if iteration == 0: 
       sess.run(init)
- 
+
     # restore if iteration is not 0
     if iteration != 0:
       variables_to_restore = tf.all_variables()
       saver = tf.train.Saver(variables_to_restore)
-      ckpt = tf.train.get_checkpoint_state(FLAGS.train_dir+FLAGS.model)
+      ckpt = tf.train.get_checkpoint_state(FLAGS.train_dir + FLAGS.model + FLAGS.system)
       if ckpt and ckpt.model_checkpoint_path:
         saver.restore(sess, ckpt.model_checkpoint_path)
         print("restored file from " + ckpt.model_checkpoint_path)
       else:
         print("no chekcpoint file found, this is an error")
 
+    # Summary op
+    graph_def = sess.graph.as_graph_def(add_shapes=True)
+    summary_writer = tf.train.SummaryWriter(FLAGS.train_dir + FLAGS.model + FLAGS.system, graph_def=graph_def)
+
     for step in xrange(CURRICULUM_STEPS[iteration]):
       x_batch = k.generate_28x28x4(CURRICULUM_BATCH_SIZE[iteration],CURRICULUM_SEQ[iteration])
-      _ , loss_value = sess.run([train_op, error],feed_dict={x:x_batch, keep_prob:.8, input_keep_prob:.85})
+      _ , loss_value = sess.run([train_op, error],feed_dict={x:x_batch, keep_prob:.5, input_keep_prob:.8})
       print(loss_value)
 
       assert not np.isnan(loss_value), 'Model diverged with loss = NaN'
 
-      if step%10 == 0:
-        checkpoint_path = os.path.join(FLAGS.train_dir + FLAGS.model, 'model.ckpt')
+      if step%100 == 0:
+        summary_str = sess.run(summary_op, feed_dict={x:x_batch, keep_prob:.5, input_keep_prob:.8})
+        summary_writer.add_summary(summary_str, step) 
+
+      if step%100 == 0:
+        checkpoint_path = os.path.join(FLAGS.train_dir + FLAGS.model + FLAGS.system, 'model.ckpt')
         saver.save(sess, checkpoint_path, global_step=step)  
-        print("saved!")
+        print("saved to " + FLAGS.train_dir + FLAGS.model + FLAGS.system)
         print(loss_value)
 
 def main(argv=None):  # pylint: disable=unused-argument
-  if tf.gfile.Exists(FLAGS.train_dir + FLAGS.model):
-    tf.gfile.DeleteRecursively(FLAGS.train_dir + FLAGS.model)
-  tf.gfile.MakeDirs(FLAGS.train_dir + FLAGS.model)
+  if tf.gfile.Exists(FLAGS.train_dir + FLAGS.model + FLAGS.system):
+    tf.gfile.DeleteRecursively(FLAGS.train_dir + FLAGS.model + FLAGS.system)
+  tf.gfile.MakeDirs(FLAGS.train_dir + FLAGS.model + FLAGS.system)
   for i in xrange(len(CURRICULUM_STEPS)):
     train(i)
 

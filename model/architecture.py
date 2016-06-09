@@ -122,6 +122,35 @@ def encoding_28x28x4(inputs, keep_prob):
 
   return y_1 
 
+def encoding_78x78x4(inputs, keep_prob):
+  """Builds encoding part of ring net.
+  Args:
+    inputs: input to encoder
+    keep_prob: dropout layer
+  """
+  #--------- Making the net -----------
+  # x_1 -> y_1 -> y_2 -> x_2
+  # this peice x_1 -> y_1
+  x_1_image = inputs 
+ 
+  # conv1
+  conv1 = _conv_layer(x_1_image, 5, 1, 32, 1)
+  # conv2
+  conv2 = _conv_layer(conv1, 2, 2, 32, 2)
+  # conv3
+  conv3 = _conv_layer(conv2, 5, 1, 64, 3)
+  # conv4
+  conv4 = _conv_layer(conv3, 2, 2, 64, 4)
+  # fc5 
+  fc5 = _fc_layer(conv4, 512, 5, True, False)
+  # dropout maybe
+  fc5_dropout = tf.nn.dropout(fc5, keep_prob)
+  # y_1 
+  y_1 = _fc_layer(fc5_dropout, 64, 6, False, False)
+
+  return y_1 
+
+
 def markov_encoding_28x28x4(inputs, keep_prob):
   """Builds encoding part of ring net.
   Args:
@@ -148,7 +177,7 @@ def markov_encoding_28x28x4(inputs, keep_prob):
   # dropout maybe
   fc5_dropout = tf.nn.dropout(fc5, keep_prob)
   # y_1 
-  y_1 = tf.nn.softmax(_fc_layer(fc5_dropout, 512, 6, False, True))
+  y_1 = ring_net.one_hot(_fc_layer(fc5_dropout, 512, 6, False, True))
 
   return y_1 
 
