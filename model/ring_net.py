@@ -21,7 +21,7 @@ FLAGS = tf.app.flags.FLAGS
 # Constants describing the training process.
 tf.app.flags.DEFINE_string('model', 'fully_connected_28x28x4',
                            """ model name to train """)
-tf.app.flags.DEFINE_string('system', 'video',
+tf.app.flags.DEFINE_string('system', 'cannon',
                            """ system to compress """)
 tf.app.flags.DEFINE_float('moving_average_decay', 0.9999,
                           """The decay to use for the moving average""")
@@ -133,13 +133,15 @@ def loss(inputs, output_t, output_g, output_f):
     tf.scalar_summary('error_xg', error_xg)
     error = tf.cond(error_tf > error_xg, lambda: error_tf, lambda: error_xg)
   elif FLAGS.model == "markov_28x28x4": 
-    error_tf = tf.mul(500.0, cross_entropy_loss(output_t, output_f))
-    error_ft = tf.mul(500.0, cross_entropy_loss(output_f, output_t))
+    error_tf = tf.mul(1.0, cross_entropy_loss(output_t, output_f))
+    error_ft = tf.mul(1.0, cross_entropy_loss(output_f, output_t))
     error_xg = tf.nn.l2_loss(output_g - inputs)
     tf.scalar_summary('error_tf', error_tf)
     tf.scalar_summary('error_ft', error_ft)
     tf.scalar_summary('error_xg', error_xg)
     error = tf.add_n([error_tf, error_ft, error_xg])
+    #error = tf.add_n([error_tf, error_xg])
+    #error = error_xg
   tf.scalar_summary('error', error)
   return error
 
@@ -150,18 +152,9 @@ def l2_loss(output, correct_output):
 
 def cross_entropy_loss(output, correct_output):
   """ cross entropy loss by converting correcte_output to a one hot vector"""
-  correct_output_one_hot = one_hot(correct_output)
-  error = tf.reduce_mean(-tf.reduce_sum(correct_output_one_hot * tf.log(correct_output), reduction_indices=[1]))
+  #correct_output_one_hot = architecture.one_hot(correct_output)
+  error = tf.reduce_mean(-tf.reduce_sum(correct_output * tf.log(output), reduction_indices=[1]))
   return error
-
-def one_hot(inputs):
-  batch_size = inputs.get_shape().as_list()[0]
-  max_value = tf.reduce_max(inputs, reduction_indices=[1])
-  inv_max_value = tf.div(1.0, max_value)
-  inv_max_value = tf.expand_dims(inv_max_value, 1)
-  inputs = tf.mul(inv_max_value, inputs)
-  inputs = tf.pow(inputs, 10)
-  return inputs
  
 def train(total_loss, lr):
    train_op = tf.train.AdamOptimizer(lr).minimize(total_loss)

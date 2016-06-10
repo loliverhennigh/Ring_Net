@@ -8,6 +8,21 @@ import numpy as np
 
 FLAGS = tf.app.flags.FLAGS
 
+def _activation_summary(x):
+  """Helper to create summaries for activations.
+
+  Creates a summary that provides a histogram of activations.
+  Creates a summary that measure the sparsity of activations.
+
+  Args:
+    x: Tensor
+  Returns:
+    nothing
+  """
+  tensor_name = x.op.name
+  tf.histogram_summary(tensor_name + '/activations', x)
+  tf.scalar_summary(tensor_name + '/sparsity', tf.nn.zero_fraction(x))
+
 def _variable_on_cpu(name, shape, initializer):
   """Helper to create a Variable stored on CPU memory.
 
@@ -100,7 +115,7 @@ def sharpen(inputs):
   inv_max_value = tf.div(1.0, max_value)
   inv_max_value = tf.expand_dims(inv_max_value, 1)
   inputs = tf.mul(inv_max_value, inputs)
-  inputs = tf.pow(inputs, 10)
+  inputs = tf.pow(inputs, 10.0)
   return inputs
 
 def one_hot(inputs):
@@ -133,6 +148,7 @@ def encoding_28x28x4(inputs, keep_prob):
   fc5_dropout = tf.nn.dropout(fc5, keep_prob)
   # y_1 
   y_1 = _fc_layer(fc5_dropout, 64, 6, False, False)
+  _activation_summary(y_1)
 
   return y_1 
 
@@ -161,6 +177,7 @@ def encoding_78x78x4(inputs, keep_prob):
   fc5_dropout = tf.nn.dropout(fc5, keep_prob)
   # y_1 
   y_1 = _fc_layer(fc5_dropout, 64, 6, False, False)
+  _activation_summary(y_1)
 
   return y_1 
 
@@ -191,7 +208,10 @@ def markov_encoding_28x28x4(inputs, keep_prob):
   # dropout maybe
   fc5_dropout = tf.nn.dropout(fc5, keep_prob)
   # y_1 
-  y_1 = sharpen(_fc_layer(fc5_dropout, 512, 6, False, True))
+  y_1 = tf.nn.softmax(_fc_layer(fc5_dropout, 512, 6, False, True))
+  # sharpen
+  y_1 = sharpen(y_1)
+  _activation_summary(y_1)
 
   return y_1 
 
@@ -214,6 +234,7 @@ def compression_28x28x4(inputs, keep_prob):
   fc12_dropout = tf.nn.dropout(fc12, keep_prob)
   # y_2 
   y_2 = _fc_layer(fc12_dropout, 64, 13, False, False)
+  _activation_summary(y_2)
 
   return y_2 
 
@@ -229,6 +250,7 @@ def markov_compression_28x28x4(inputs):
  
   # y_2 
   y_2 = tf.nn.softmax(_fc_layer(y_1, 512, 13, False, True))
+  _activation_summary(y_2)
 
   return y_2 
 
@@ -257,6 +279,7 @@ def decoding_28x28x4(inputs):
   conv26 = _transpose_conv_layer(conv25, 5, 1, 4, 26)
   # x_2 
   x_2 = tf.reshape(conv26, [-1, 28, 28, 4])
+  _activation_summary(x_2)
 
   return x_2 
 
