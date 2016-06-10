@@ -58,7 +58,6 @@ def markov_unwrap(inputs, keep_prob, seq_length):
   # first I will run once to create the graph and then set reuse to true so there is weight sharing when I roll out t
   # do f
   y_0 = ring_net.encoding(inputs[:, 0, :, :, :],keep_prob) 
-  y_0 = ring_net.one_hot(y_0)
   # do g
   x_0 = ring_net.decoding(y_0) 
   # do T' 

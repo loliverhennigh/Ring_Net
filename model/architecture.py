@@ -94,6 +94,20 @@ def _fc_layer(inputs, hiddens, idx, flat = False, linear = False):
     ip = tf.add(tf.matmul(inputs_processed,weights),biases)
     return tf.maximum(FLAGS.alpha*ip,ip,name=str(idx)+'_fc')
 
+def sharpen(inputs):
+  batch_size = inputs.get_shape().as_list()[0]
+  max_value = tf.reduce_max(inputs, reduction_indices=[1])
+  inv_max_value = tf.div(1.0, max_value)
+  inv_max_value = tf.expand_dims(inv_max_value, 1)
+  inputs = tf.mul(inv_max_value, inputs)
+  inputs = tf.pow(inputs, 10)
+  return inputs
+
+def one_hot(inputs):
+  index_max = tf.argmax(inputs, 1)
+  input_shape = inputs.get_shape().as_list()[1]
+  return tf.one_hot(index_max, input_shape, 1.0, 0.0)
+
 def encoding_28x28x4(inputs, keep_prob):
   """Builds encoding part of ring net.
   Args:
@@ -177,7 +191,7 @@ def markov_encoding_28x28x4(inputs, keep_prob):
   # dropout maybe
   fc5_dropout = tf.nn.dropout(fc5, keep_prob)
   # y_1 
-  y_1 = ring_net.one_hot(_fc_layer(fc5_dropout, 512, 6, False, True))
+  y_1 = sharpen(_fc_layer(fc5_dropout, 512, 6, False, True))
 
   return y_1 
 

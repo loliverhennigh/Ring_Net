@@ -160,10 +160,7 @@ def one_hot(inputs):
   inv_max_value = tf.div(1.0, max_value)
   inv_max_value = tf.expand_dims(inv_max_value, 1)
   inputs = tf.mul(inv_max_value, inputs)
-  inputs = tf.square(inputs)
-  inputs = tf.square(inputs)
-  inputs = tf.square(inputs)
-  inputs = tf.square(inputs)
+  inputs = tf.pow(inputs, 10)
   return inputs
  
 def train(total_loss, lr):
