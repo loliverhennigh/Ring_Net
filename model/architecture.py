@@ -136,8 +136,8 @@ def encoding_28x28x4(inputs, keep_prob):
 
   return y_1 
 
-def encoding_78x78x4(inputs, keep_prob):
-  """Builds encoding part of ring net.
+def encoding_84x84x4(inputs, keep_prob):
+  """Builds encoding part of ring net. (similar to DQN)
   Args:
     inputs: input to encoder
     keep_prob: dropout layer
@@ -148,11 +148,11 @@ def encoding_78x78x4(inputs, keep_prob):
   x_1_image = inputs 
  
   # conv1
-  conv1 = _conv_layer(x_1_image, 5, 1, 32, 1)
+  conv1 = _conv_layer(x_1_image, 8, 3, 32, 1)
   # conv2
-  conv2 = _conv_layer(conv1, 2, 2, 32, 2)
+  conv2 = _conv_layer(conv1, 4, 2, 64, 2)
   # conv3
-  conv3 = _conv_layer(conv2, 5, 1, 64, 3)
+  conv3 = _conv_layer(conv2, 3, 1, 64, 3)
   # conv4
   conv4 = _conv_layer(conv3, 2, 2, 64, 4)
   # fc5 
@@ -160,7 +160,7 @@ def encoding_78x78x4(inputs, keep_prob):
   # dropout maybe
   fc5_dropout = tf.nn.dropout(fc5, keep_prob)
   # y_1 
-  y_1 = _fc_layer(fc5_dropout, 64, 6, False, False)
+  y_1 = _fc_layer(fc5_dropout, 128, 6, False, False)
 
   return y_1 
 
@@ -217,6 +217,31 @@ def compression_28x28x4(inputs, keep_prob):
 
   return y_2 
 
+def compression_84x84x4(inputs, keep_prob):
+  """Builds compressed dynamical system part of the net.
+  Args:
+    inputs: input to system
+  """
+  #--------- Making the net -----------
+  # x_1 -> y_1 -> y_2 -> x_2
+  # this peice y_1 -> y_2
+  y_1 = inputs 
+ 
+  # (start indexing at 10) -- I will change this in a bit
+  # fc11
+  fc11 = _fc_layer(y_1, 512, 11, False, False)
+  # fc12
+  fc12 = _fc_layer(fc11, 512, 12, False, False)
+  # fc13
+  fc12 = _fc_layer(fc11, 512, 13, False, False)
+  # dropout maybe
+  fc13_dropout = tf.nn.dropout(fc13, keep_prob)
+  # y_2 
+  y_2 = _fc_layer(fc13_dropout, 64, 13, False, False)
+
+  return y_2 
+
+
 def markov_compression_28x28x4(inputs):
   """Builds compressed dynamical system part of the net.
   Args:
@@ -256,7 +281,35 @@ def decoding_28x28x4(inputs):
   # conv26
   conv26 = _transpose_conv_layer(conv25, 5, 1, 4, 26)
   # x_2 
-  x_2 = tf.reshape(conv26, [-1, 28, 28, 4])
+  #x_2 = tf.reshape(conv26, [-1, 28, 28, 4])
+
+  return x_2 
+
+def decoding_84x84x4(inputs):
+  """Builds decoding part of ring net.
+  Args:
+    inputs: input to decoder
+  """
+  #--------- Making the net -----------
+  # x_1 -> y_1 -> y_2 -> x_2
+  # this peice y_2 -> x_2
+  y_2 = inputs 
+ 
+  # fc21
+  fc21 = _fc_layer(y_2, 512, 21, False, False)
+  # fc23
+  fc22 = _fc_layer(fc21, 64*7*7, 22, False, False)
+  conv22 = tf.reshape(fc22, [-1, 7, 7, 64])
+  # conv23
+  conv23 = _transpose_conv_layer(conv22, 2, 2, 64, 23)
+  # conv24
+  conv24 = _transpose_conv_layer(conv23, 3, 1, 64, 24)
+  # conv25
+  conv25 = _transpose_conv_layer(conv24, 4, 2, 32, 25)
+  # conv26
+  conv26 = _transpose_conv_layer(conv25, 8, 3, 4, 26)
+  # x_2 
+  #x_2 = tf.reshape(conv26, [-1, 28, 28, 4])
 
   return x_2 
 
