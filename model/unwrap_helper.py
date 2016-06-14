@@ -4,6 +4,7 @@
 import tensorflow as tf
 import numpy as np
 import ring_net 
+import architecture
 
 FLAGS = tf.app.flags.FLAGS
 
@@ -68,7 +69,6 @@ def markov_unwrap(inputs, keep_prob, seq_length):
   # append these to the lists (I dont need output f. there will be seq_length elements of output_g and seq_length-1 of output_t and output_f)
   output_g.append(x_0)
   output_t.append(y_1)
-  y_1 = ring_net.one_hot(y_1)
 
   # loop throught the seq
   for i in xrange(seq_length - 1):
@@ -76,13 +76,12 @@ def markov_unwrap(inputs, keep_prob, seq_length):
     y_f_i = ring_net.encoding(inputs[:, i+1, :, :, :],keep_prob)
     output_f.append(y_f_i)
     # calc g for all in seq
-    x_g_i = ring_net.decoding(y_1) 
+    x_g_i = ring_net.decoding(architecture.sharpen(y_1)) 
     output_g.append(x_g_i)
     # calc t for all in seq
     if i != (seq_length - 2):
       y_1 = ring_net.compression(y_1, keep_prob)
       output_t.append(y_1)
-      y_1 = ring_net.one_hot(y_1)
  
   # compact output_f and output_t 
   output_f = tf.concat(0, output_f)

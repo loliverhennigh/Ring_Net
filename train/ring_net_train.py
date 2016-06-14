@@ -20,9 +20,9 @@ FLAGS = tf.app.flags.FLAGS
 
 tf.app.flags.DEFINE_string('train_dir', '../checkpoints/train_store_',
                             """dir to store trained net""")
-CURRICULUM_STEPS = [100001, 100001]
-CURRICULUM_SEQ = [2, 3]
-CURRICULUM_BATCH_SIZE = [50, 50]
+CURRICULUM_STEPS = [1000001]
+CURRICULUM_SEQ = [2]
+CURRICULUM_BATCH_SIZE = [50]
 
 
 def train(iteration):
@@ -96,7 +96,7 @@ def train(iteration):
         summary_str = sess.run(summary_op, feed_dict={x:x_batch, keep_prob:.5, input_keep_prob:.8})
         summary_writer.add_summary(summary_str, step) 
 
-      if step%100 == 0:
+      if step%1000 == 0:
         checkpoint_path = os.path.join(FLAGS.train_dir + FLAGS.model + FLAGS.system, 'model.ckpt')
         saver.save(sess, checkpoint_path, global_step=step)  
         print("saved to " + FLAGS.train_dir + FLAGS.model + FLAGS.system)
