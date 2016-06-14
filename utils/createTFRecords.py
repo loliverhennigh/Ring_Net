@@ -8,12 +8,12 @@ import cv2
 def _bytes_feature(value):
   return tf.train.Feature(bytes_list=tf.train.BytesList(value=[value]))
 
-def generate_tfrecords(video_file, seq_length, shape, frame_num)
+def generate_tfrecords(video_file, seq_length, shape, frame_num):
   # make video cap
   cap = cv2.VideoCapture(video_file) 
 
   # create tf writer
-  record_filename = video_file.replace('.', '_') + '_seq_' + str(seq_length) + '_size_' + str(shape[0]) + 'x' + str(shape[1]) + 'x' + str(frame_num) + '.tfrecords')
+  record_filename = video_file.replace('.', '_') + '_seq_' + str(seq_length) + '_size_' + str(shape[0]) + 'x' + str(shape[1]) + 'x' + str(frame_num) + '.tfrecords'
  
   # check to see if file alreay exists 
   tfrecord_filename = glb('../data/tfRecords/'+FLAGS.video_dir+'/*') 

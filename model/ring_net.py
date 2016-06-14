@@ -114,7 +114,7 @@ def unwrap(inputs, keep_prob, seq_length):
     output_f: calculated y values from f 
   """
 
-  if FLAGS.model == "fully_connected_28x28x4" of FLAGS.model == "fully_connected_28x28x4": 
+  if FLAGS.model == "fully_connected_28x28x4" or FLAGS.model == "fully_connected_84x84x4": 
     output_t, output_g, output_f = unwrap_helper.fully_connected_unwrap(inputs, keep_prob, seq_length)
   elif FLAGS.model == "markov_28x28x4": 
     output_t, output_g, output_f = unwrap_helper.markov_unwrap(inputs, keep_prob, seq_length)
@@ -132,7 +132,7 @@ def loss(inputs, output_t, output_g, output_f):
   Return:
     error: loss value
   """
-  if FLAGS.model == "fully_connected_28x28x4" of FLAGS.model == "fully_connected_28x28x4": 
+  if FLAGS.model == "fully_connected_28x28x4" or FLAGS.model == "fully_connected_28x28x4": 
     error_tf = tf.mul(50.0, tf.nn.l2_loss(output_f - output_t)) # scaling by 50 right now but this will depend on what network I am training. requires further investigation
     error_xg = tf.nn.l2_loss(output_g - inputs)
     tf.scalar_summary('error_tf', error_tf)

@@ -2,7 +2,7 @@
 import os
 import numpy as np
 import tensorflow as tf
-import utils
+import utils.createTFRecords as createTFRecords
 from glob import glob as glb
 
 
@@ -25,7 +25,7 @@ def video_inputs(batch_size, seq_length):
 
   for f in video_filename:
     if model == "fully_connected_84x84x4":
-      generate_tfrecords(f, seq_length, (84,84), 4)
+      generateTFRecords.generate_tfrecords(f, seq_length, (84,84), 4)
      
 
  
