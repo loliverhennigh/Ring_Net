@@ -29,10 +29,8 @@ def train(iteration):
   """Train ring_net for a number of steps."""
   with tf.Graph().as_default():
     # make dynamic system
-    if FLAGS.system == "cannon":
-      k = cn.Cannon()
-    elif FLAGS.system == "video":
-      k = vi.Video()
+    #if FLAGS.system == "cannon":
+    #  k = cn.Cannon()
     # make inputs
     x = ring_net.inputs(CURRICULUM_BATCH_SIZE[iteration], CURRICULUM_SEQ[iteration]) 
     # possible input dropout 
@@ -81,20 +79,29 @@ def train(iteration):
       else:
         print("no chekcpoint file found, this is an error")
 
+    # Start que runner
+    tf.train.start_queue_runners(sess=sess)
+
     # Summary op
     graph_def = sess.graph.as_graph_def(add_shapes=True)
     summary_writer = tf.train.SummaryWriter(FLAGS.train_dir + FLAGS.model + FLAGS.system, graph_def=graph_def)
 
     for step in xrange(CURRICULUM_STEPS[iteration]):
-      x_batch = k.generate_28x28x4(CURRICULUM_BATCH_SIZE[iteration],CURRICULUM_SEQ[iteration])
-      _ , loss_value = sess.run([train_op, error],feed_dict={x:x_batch, keep_prob:.5, input_keep_prob:.8})
+      if FLAGS.system == "cannon":
+        x_batch = k.generate_28x28x4(CURRICULUM_BATCH_SIZE[iteration],CURRICULUM_SEQ[iteration])
+        _ , loss_value = sess.run([train_op, error],feed_dict={x:x_batch, keep_prob:.5, input_keep_prob:.8})
+      elif FLAGS.system == "video":
+        _ , loss_value = sess.run([train_op, error],feed_dict={keep_prob:.5, input_keep_prob:.8})
       print(loss_value)
 
       assert not np.isnan(loss_value), 'Model diverged with loss = NaN'
 
       if step%100 == 0:
-        summary_str = sess.run(summary_op, feed_dict={x:x_batch, keep_prob:.5, input_keep_prob:.8})
-        summary_writer.add_summary(summary_str, step) 
+        if FLAGS.system == "cannon":
+          summary_str = sess.run(summary_op, feed_dict={x:x_batch, keep_prob:.5, input_keep_prob:.8})
+        elif FLAGS.system == "video":
+          summary_str = sess.run(summary_op, feed_dict={keep_prob:.5, input_keep_prob:.8})
+          summary_writer.add_summary(summary_str, step) 
 
       if step%1000 == 0:
         checkpoint_path = os.path.join(FLAGS.train_dir + FLAGS.model + FLAGS.system, 'model.ckpt')

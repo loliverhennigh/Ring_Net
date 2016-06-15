@@ -26,16 +26,11 @@ tf.app.flags.DEFINE_string('video_name', 'new_video_1.mp4',
 
 writer = animation.writers['ffmpeg'](fps=30)
 
-NUM_FRAMES = 200
+NUM_FRAMES = 20
 
 def evaluate():
   """ Eval the system"""
   with tf.Graph().as_default():
-    # make dynamic system
-    if FLAGS.system == "cannon":
-      k = cn.Cannon()
-    elif FLAGS.system == "video":
-      k = vi.Video()
     # make inputs
     x = ring_net.inputs(1, NUM_FRAMES) 
     # unwrap it
@@ -53,11 +48,13 @@ def evaluate():
     else:
       print("no chekcpoint file found, this is an error")
 
+    # start que runner
+    tf.train.start_queue_runners(sess=sess)
+
     # eval ounce
-    x_batch = k.generate_28x28x4(1, NUM_FRAMES)
-    generated_seq = output_g.eval(session=sess,feed_dict={x:x_batch, keep_prob:1.0})
+    generated_seq, inputs = sess.run([output_g, x],feed_dict={keep_prob:1.0})
     generated_seq = generated_seq[0]
-    x_batch = x_batch[0] 
+    inputs = inputs[0]
  
     # make video
     ims_generated = []
@@ -65,7 +62,7 @@ def evaluate():
     for step in xrange(NUM_FRAMES):
       # calc image from y_2
       print(step)
-      new_im = np.concatenate((generated_seq[step, :, :, 0].reshape((28,28))/np.amax(generated_seq[step, :, :, 0]), x_batch[step,:,:,0].reshape((28,28))/np.amax(x_batch[step,:,:,0])), axis=0)
+      new_im = np.concatenate((generated_seq[step, :, :, 0].squeeze()/np.amax(generated_seq[step, :, :, 0]), inputs[step,:,:,0].squeeze()/np.amax(inputs[step,:,:,0])), axis=0)
       ims_generated.append((plt.imshow(new_im),))
     m_ani = animation.ArtistAnimation(fig, ims_generated, interval= 5000, repeat_delay=3000, blit=True)
     print(FLAGS.video_name)

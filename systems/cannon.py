@@ -19,6 +19,8 @@ class Cannon:
         self.grav = 4.0
         self.dt = .01 
         self.damp = 0.00 #probably set this to 0 for most applications
+        # total steps
+        self.total_steps = 0
 
     # very basic physics
     def restart(self):
@@ -26,6 +28,7 @@ class Cannon:
         self.y_pos = .5 
         self.x_vel = random.random()
         self.y_vel = 5*(random.random()-.5) 
+        self.total_steps = 0
 
     # very basic physics
     def update_pos(self):
@@ -48,6 +51,7 @@ class Cannon:
             if ((1-0.1428) < self.y_pos):
                 self.y_vel = -self.y_vel 
                 self.y_pos = (1-0.1428) 
+        self.total_steps = self.total_steps + 1
  
     # generate pixell images
     def image_28x28(self):
@@ -78,7 +82,27 @@ class Cannon:
 
         return im 
 
-    def generate_28x28x4(self, batch_size, num_steps):
+    def generate_28x28(self, num_steps, frame_num):
+        if self.total_steps > 200:
+            self.restart()
+
+        xs = np.zeros([num_steps, 28, 28, 4])
+        x = np.zeros([28, 28, 4])
+        for s in xrange(num_steps):
+          if s == 0:
+            for i in xrange(frame_num):
+              x[:,:,i] = self.image_28x28()
+              self.update_pos()
+          else:
+            x[:,:,0:frame_num-1] = x[:,:,1:frame_num]
+            x[:,:,frame_num-1] = self.image_28x28()
+            self.update_pos()
+          xs[s, :, :, :] = x[:,:,:]
+ 
+        return xs
+
+
+    def depricated_generate_28x28x4(self, batch_size, num_steps):
         cut_length = num_steps
         if num_steps < 5:
           cut_length = num_steps
@@ -115,33 +139,6 @@ class Cannon:
         x = x[:, 0:cut_length, :, :, :]
             
         return x
-
-    def generate_28x28(self, batch_size, num_steps):
-        # makes a np array of size batch_size x num_steps
-        # this will be what most learing algorithms need
-        # from there data
-        x_0 = np.zeros([batch_size, num_steps, 28, 28])
-        x_1 = np.zeros([batch_size, num_steps, 28, 28])
-        x_2 = np.zeros([batch_size, num_steps, 28, 28])
-        for i in xrange(batch_size):
-            self.restart()
-            x_0[i, 0, :] = self.image_28x28()
-            self.update_pos()
-            x_0[i, 1, :] = self.image_28x28()
-            x_1[i, 0, :] = self.image_28x28()
-            for j in xrange(num_steps-2):
-                #time.sleep(.5)
-                self.update_pos()
-                x_0[i, j + 2, :] = self.image_28x28()
-                x_1[i, j + 1, :] = x_0[i, j + 2, :] 
-                x_2[i, j, :] = x_0[i, j + 2, :] 
-            self.update_pos()
-            x_1[i, num_steps-1, :] = self.image_28x28()
-            x_2[i, num_steps-2, :] = self.image_28x28()
-            self.update_pos()
-            x_2[i, num_steps-1, :] = self.image_28x28()
-        return x_0, x_1, x_2
-
 
     def speed(self):
         return math.sqrt(self.x_vel ** 2 + self.y_vel ** 2)

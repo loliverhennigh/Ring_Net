@@ -17,7 +17,6 @@ import input.ring_net_input as ring_net_input
 
 FLAGS = tf.app.flags.FLAGS
 
-
 # Constants describing the training process.
 tf.app.flags.DEFINE_string('model', 'fully_connected_28x28x4',
                            """ model name to train """)
@@ -44,8 +43,10 @@ def inputs(batch_size, seq_length):
   Return:
     x: input vector, may be filled 
   """
-  if FLAGS.model == "fully_connected_28x28x4" or FLAGS.model == "markov_28x28x4":
-    x = tf.placeholder(tf.float32, [batch_size, seq_length, 28, 28, 4])
+  if FLAGS.system == "cannon":
+    x = ring_net_input.cannon_inputs(batch_size, seq_length)
+  elif FLAGS.system == "video":
+    x = ring_net_input.video_inputs(batch_size, seq_length)
   return x
 
 def encoding(inputs, keep_prob):
@@ -132,7 +133,7 @@ def loss(inputs, output_t, output_g, output_f):
   Return:
     error: loss value
   """
-  if FLAGS.model == "fully_connected_28x28x4" or FLAGS.model == "fully_connected_28x28x4": 
+  if FLAGS.model == "fully_connected_28x28x4" or FLAGS.model == "fully_connected_84x84x4": 
     error_tf = tf.mul(50.0, tf.nn.l2_loss(output_f - output_t)) # scaling by 50 right now but this will depend on what network I am training. requires further investigation
     error_xg = tf.nn.l2_loss(output_g - inputs)
     tf.scalar_summary('error_tf', error_tf)

@@ -256,12 +256,11 @@ def compression_84x84x4(inputs, keep_prob):
   # fc13
   fc12 = _fc_layer(fc11, 512, 13, False, False)
   # dropout maybe
-  fc13_dropout = tf.nn.dropout(fc13, keep_prob)
+  fc12_dropout = tf.nn.dropout(fc12, keep_prob)
   # y_2 
-  y_2 = _fc_layer(fc13_dropout, 64, 13, False, False)
+  y_2 = _fc_layer(fc12_dropout, 128, 14, False, False)
 
   return y_2 
-
 
 def markov_compression_28x28x4(inputs):
   """Builds compressed dynamical system part of the net.
@@ -290,7 +289,7 @@ def decoding_28x28x4(inputs):
   y_2 = inputs 
  
   # fc21
-  fc21 = _fc_layer(y_2, 512, 21, False, False)
+  fc21 = _fc_layer(y_2, 64, 21, False, False)
   # fc23
   fc22 = _fc_layer(fc21, 64*7*7, 22, False, False)
   conv22 = tf.reshape(fc22, [-1, 7, 7, 64])
@@ -317,7 +316,7 @@ def decoding_84x84x4(inputs):
   y_2 = inputs 
  
   # fc21
-  fc21 = _fc_layer(y_2, 512, 21, False, False)
+  fc21 = _fc_layer(y_2, 128, 21, False, False)
   # fc23
   fc22 = _fc_layer(fc21, 64*7*7, 22, False, False)
   conv22 = tf.reshape(fc22, [-1, 7, 7, 64])
@@ -331,7 +330,7 @@ def decoding_84x84x4(inputs):
   conv26 = _transpose_conv_layer(conv25, 8, 3, 4, 26)
   # x_2 
   #x_2 = tf.reshape(conv26, [-1, 28, 28, 4])
-  x_2 = tf.reshape(conv26, [-1, 28, 28, 4])
+  x_2 = tf.reshape(conv26, [-1, 84, 84, 4])
   _activation_summary(x_2)
 
   return x_2 
