@@ -176,7 +176,7 @@ def encoding_84x84x4(inputs, keep_prob):
   # dropout maybe
   fc5_dropout = tf.nn.dropout(fc5, keep_prob)
   # y_1 
-  y_1 = _fc_layer(fc5_dropout, 128, 6, False, False)
+  y_1 = _fc_layer(fc5_dropout, 256, 6, False, False)
   _activation_summary(y_1)
 
   return y_1 
@@ -258,7 +258,7 @@ def compression_84x84x4(inputs, keep_prob):
   # dropout maybe
   fc12_dropout = tf.nn.dropout(fc12, keep_prob)
   # y_2 
-  y_2 = _fc_layer(fc12_dropout, 128, 14, False, False)
+  y_2 = _fc_layer(fc12_dropout, 256, 14, False, False)
 
   return y_2 
 
@@ -316,7 +316,7 @@ def decoding_84x84x4(inputs):
   y_2 = inputs 
  
   # fc21
-  fc21 = _fc_layer(y_2, 128, 21, False, False)
+  fc21 = _fc_layer(y_2, 256, 21, False, False)
   # fc23
   fc22 = _fc_layer(fc21, 64*7*7, 22, False, False)
   conv22 = tf.reshape(fc22, [-1, 7, 7, 64])

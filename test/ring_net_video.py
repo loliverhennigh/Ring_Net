@@ -26,7 +26,7 @@ tf.app.flags.DEFINE_string('video_name', 'new_video_1.mp4',
 
 writer = animation.writers['ffmpeg'](fps=30)
 
-NUM_FRAMES = 20
+NUM_FRAMES = 100
 
 def evaluate():
   """ Eval the system"""
