@@ -82,7 +82,7 @@ def video_inputs(batch_size, seq_length):
   # get list of video file names
   video_filename = glb('../data/videos/'+FLAGS.video_dir+'/*') 
 
-  if FLAGS.model == "fully_connected_84x84x4":
+  if FLAGS.model == "fully_connected_84x84x4" or FLAGS.model == "lstm_84x84x4":
     shape = (84,84)
     num_frames = 4
 

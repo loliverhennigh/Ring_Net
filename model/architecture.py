@@ -262,6 +262,54 @@ def compression_84x84x4(inputs, keep_prob):
 
   return y_2 
 
+def lstm_compression_28x28x4(inputs, keep_prob):
+  """Builds compressed dynamical system part of the net.
+  Args:
+    inputs: input to system
+  """
+  #--------- Making the net -----------
+  # x_1 -> y_1 -> y_2 -> x_2
+  # this peice y_1 -> y_2
+  y_1 = inputs 
+ 
+  # (start indexing at 10) -- I will change this in a bit
+  # fc11
+  fc11 = _fc_layer(y_1, 512, 11, False, False)
+  # fc12
+  fc12 = _fc_layer(fc11, 512, 12, False, False)
+  # dropout maybe
+  fc12_dropout = tf.nn.dropout(fc12, keep_prob)
+  # y_2 
+  y_2 = _fc_layer(fc12_dropout, 64, 13, False, False)
+  _activation_summary(y_2)
+
+  return y_2 
+
+def lstm_compression_84x84x4(inputs, hidden_state, keep_prob):
+  """Builds compressed dynamical system part of the net.
+  Args:
+    inputs: input to system
+  """
+  #--------- Making the net -----------
+  # x_1 -> y_1 -> y_2 -> x_2
+  # this peice y_1 -> y_2
+  num_layers = 3 
+
+  y_1 = inputs
+
+  with tf.variable_scope("LSTM", initializer = tf.random_uniform_initializer(-0.01, 0.01)):
+    with tf.device('/cpu:0'):
+      lstm_cell = tf.nn.rnn_cell.BasicLSTMCell(256, forget_bias=1.0)
+      lstm_cell = tf.nn.rnn_cell.DropoutWrapper(lstm_cell, output_keep_prob=keep_prob)
+      cell = tf.nn.rnn_cell.MultiRNNCell([lstm_cell] * num_layers)
+      if hidden_state == None:
+        batch_size = inputs.get_shape()[0]
+        hidden_state = cell.zero_state(batch_size, tf.float32)
+
+  y2, new_state = cell(y_1, hidden_state)
+  
+  return y2, new_state
+
 def markov_compression_28x28x4(inputs):
   """Builds compressed dynamical system part of the net.
   Args:
