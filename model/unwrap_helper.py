@@ -19,6 +19,7 @@ def fully_connected_unwrap(inputs, keep_prob, seq_length):
   y_0 = ring_net.encoding(inputs[:, 0, :, :, :],keep_prob) 
   # do g
   x_0 = ring_net.decoding(y_0) 
+  tf.image_summary('images_encoder', x_0)
   # do T' 
   y_1 = ring_net.compression(y_0, keep_prob) 
   # set weight sharing   
@@ -35,6 +36,7 @@ def fully_connected_unwrap(inputs, keep_prob, seq_length):
     output_f.append(y_f_i)
     # calc g for all in seq
     x_g_i = ring_net.decoding(y_1) 
+    tf.image_summary('images_seq_' + str(i), x_g_i)
     output_g.append(x_g_i)
     # calc t for all in seq
     if i != (seq_length - 2):
