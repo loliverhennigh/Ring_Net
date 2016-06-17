@@ -176,7 +176,7 @@ def encoding_84x84x4(inputs, keep_prob):
   # dropout maybe
   fc5_dropout = tf.nn.dropout(fc5, keep_prob)
   # y_1 
-  y_1 = _fc_layer(fc5_dropout, 128, 6, False, False)
+  y_1 = _fc_layer(fc5_dropout, 256, 6, False, False)
   _activation_summary(y_1)
 
   return y_1 
@@ -258,9 +258,57 @@ def compression_84x84x4(inputs, keep_prob):
   # dropout maybe
   fc12_dropout = tf.nn.dropout(fc12, keep_prob)
   # y_2 
-  y_2 = _fc_layer(fc12_dropout, 128, 14, False, False)
+  y_2 = _fc_layer(fc12_dropout, 256, 14, False, False)
 
   return y_2 
+
+def lstm_compression_28x28x4(inputs, keep_prob):
+  """Builds compressed dynamical system part of the net.
+  Args:
+    inputs: input to system
+  """
+  #--------- Making the net -----------
+  # x_1 -> y_1 -> y_2 -> x_2
+  # this peice y_1 -> y_2
+  y_1 = inputs 
+ 
+  # (start indexing at 10) -- I will change this in a bit
+  # fc11
+  fc11 = _fc_layer(y_1, 512, 11, False, False)
+  # fc12
+  fc12 = _fc_layer(fc11, 512, 12, False, False)
+  # dropout maybe
+  fc12_dropout = tf.nn.dropout(fc12, keep_prob)
+  # y_2 
+  y_2 = _fc_layer(fc12_dropout, 64, 13, False, False)
+  _activation_summary(y_2)
+
+  return y_2 
+
+def lstm_compression_84x84x4(inputs, hidden_state, keep_prob):
+  """Builds compressed dynamical system part of the net.
+  Args:
+    inputs: input to system
+  """
+  #--------- Making the net -----------
+  # x_1 -> y_1 -> y_2 -> x_2
+  # this peice y_1 -> y_2
+  num_layers = 3 
+
+  y_1 = inputs
+
+  with tf.variable_scope("LSTM", initializer = tf.random_uniform_initializer(-0.01, 0.01)):
+    with tf.device('/cpu:0'):
+      lstm_cell = tf.nn.rnn_cell.BasicLSTMCell(256, forget_bias=1.0)
+      lstm_cell = tf.nn.rnn_cell.DropoutWrapper(lstm_cell, output_keep_prob=keep_prob)
+      cell = tf.nn.rnn_cell.MultiRNNCell([lstm_cell] * num_layers)
+      if hidden_state == None:
+        batch_size = inputs.get_shape()[0]
+        hidden_state = cell.zero_state(batch_size, tf.float32)
+
+  y2, new_state = cell(y_1, hidden_state)
+  
+  return y2, new_state
 
 def markov_compression_28x28x4(inputs):
   """Builds compressed dynamical system part of the net.
@@ -316,7 +364,7 @@ def decoding_84x84x4(inputs):
   y_2 = inputs 
  
   # fc21
-  fc21 = _fc_layer(y_2, 128, 21, False, False)
+  fc21 = _fc_layer(y_2, 256, 21, False, False)
   # fc23
   fc22 = _fc_layer(fc21, 64*7*7, 22, False, False)
   conv22 = tf.reshape(fc22, [-1, 7, 7, 64])

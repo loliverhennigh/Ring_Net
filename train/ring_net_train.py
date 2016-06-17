@@ -13,7 +13,6 @@ import tensorflow as tf
 import sys
 sys.path.append('../')
 import systems.cannon as cn
-import systems.video as vi 
 import model.ring_net as ring_net
 
 FLAGS = tf.app.flags.FLAGS
@@ -21,7 +20,7 @@ FLAGS = tf.app.flags.FLAGS
 tf.app.flags.DEFINE_string('train_dir', '../checkpoints/train_store_',
                             """dir to store trained net""")
 CURRICULUM_STEPS = [1000001]
-CURRICULUM_SEQ = [2]
+CURRICULUM_SEQ = [3]
 CURRICULUM_BATCH_SIZE = [50]
 
 

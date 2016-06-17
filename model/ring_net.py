@@ -58,9 +58,9 @@ def encoding(inputs, keep_prob):
   #--------- Making the net -----------
   # x_1 -> y_1 -> y_2 -> x_2
   # this peice x_1 -> y_1
-  if FLAGS.model == "fully_connected_28x28x4": 
+  if FLAGS.model == "fully_connected_28x28x4" or FLAGS.model == "lstm_28x28x4": 
     y_1 = architecture.encoding_28x28x4(inputs, keep_prob)
-  elif FLAGS.model == "fully_connected_84x84x4": 
+  elif FLAGS.model == "fully_connected_84x84x4" or FLAGS.model == "lstm_84x84x4": 
     y_1 = architecture.encoding_84x84x4(inputs, keep_prob)
   elif FLAGS.model == "markov_28x28x4": 
     y_1 = architecture.markov_encoding_28x28x4(inputs, keep_prob)
@@ -79,6 +79,10 @@ def compression(inputs, keep_prob):
   if FLAGS.model == "fully_connected_28x28x4": 
     y_2 = architecture.compression_28x28x4(inputs, keep_prob)
   elif FLAGS.model == "fully_connected_84x84x4": 
+    y_2 = architecture.lstm_compression_84x84x4(inputs, keep_prob)
+  elif FLAGS.model == "lstm_28x28x4": 
+    y_2 = architecture.lstm_compression_84x84x4(inputs, keep_prob)
+  elif FLAGS.model == "lstm_84x84x4": 
     y_2 = architecture.compression_84x84x4(inputs, keep_prob)
   elif FLAGS.model == "markov_28x28x4": 
     y_2 = architecture.markov_compression_28x28x4(inputs)
@@ -93,9 +97,9 @@ def decoding(inputs):
   #--------- Making the net -----------
   # x_1 -> y_1 -> y_2 -> x_2
   # this peice y_2 -> x_2
-  if FLAGS.model == "fully_connected_28x28x4": 
+  if FLAGS.model == "fully_connected_28x28x4" or FLAGS.model == "lstm_28x28x4": 
     x_2 = architecture.decoding_28x28x4(inputs)
-  elif FLAGS.model == "fully_connected_84x84x4": 
+  elif FLAGS.model == "fully_connected_84x84x4" or FLAGS.model == "lstm_84x84x4": 
     x_2 = architecture.decoding_84x84x4(inputs)
   elif FLAGS.model == "markov_28x28x4": 
     x_2 = architecture.decoding_28x28x4(inputs)
@@ -117,6 +121,8 @@ def unwrap(inputs, keep_prob, seq_length):
 
   if FLAGS.model == "fully_connected_28x28x4" or FLAGS.model == "fully_connected_84x84x4": 
     output_t, output_g, output_f = unwrap_helper.fully_connected_unwrap(inputs, keep_prob, seq_length)
+  elif FLAGS.model == "lstm_84x84x4":
+    output_t, output_g, output_f = unwrap_helper.lstm_unwrap(inputs, keep_prob, seq_length)
   elif FLAGS.model == "markov_28x28x4": 
     output_t, output_g, output_f = unwrap_helper.markov_unwrap(inputs, keep_prob, seq_length)
 
@@ -133,7 +139,7 @@ def loss(inputs, output_t, output_g, output_f):
   Return:
     error: loss value
   """
-  if FLAGS.model == "fully_connected_28x28x4" or FLAGS.model == "fully_connected_84x84x4": 
+  if FLAGS.model == "fully_connected_28x28x4" or FLAGS.model == "fully_connected_84x84x4" or FLAGS.model == "lstm_84x84x4":
     error_tf = tf.mul(50.0, tf.nn.l2_loss(output_f - output_t)) # scaling by 50 right now but this will depend on what network I am training. requires further investigation
     error_xg = tf.nn.l2_loss(output_g - inputs)
     tf.scalar_summary('error_tf', error_tf)

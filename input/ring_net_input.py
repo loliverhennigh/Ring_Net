@@ -82,7 +82,7 @@ def video_inputs(batch_size, seq_length):
   # get list of video file names
   video_filename = glb('../data/videos/'+FLAGS.video_dir+'/*') 
 
-  if FLAGS.model == "fully_connected_84x84x4":
+  if FLAGS.model == "fully_connected_84x84x4" or FLAGS.model == "lstm_84x84x4":
     shape = (84,84)
     num_frames = 4
 
@@ -91,7 +91,7 @@ def video_inputs(batch_size, seq_length):
     createTFRecords.generate_tfrecords(f, seq_length, shape, num_frames)
  
   # get list of tfrecords 
-  tfrecord_filename = glb('../data/tfrecords/'+FLAGS.video_dir+'/*') 
+  tfrecord_filename = glb('../data/tfrecords/'+FLAGS.video_dir+'/*seq_' + str(seq_length) + '_size_' + str(shape[0]) + 'x' + str(shape[1]) + 'x' + str(num_frames) + '.tfrecords') 
   
   filename_queue = tf.train.string_input_producer(tfrecord_filename) 
 
