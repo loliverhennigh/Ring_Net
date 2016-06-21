@@ -4,6 +4,7 @@ import numpy as np
 import tensorflow as tf
 import utils.createTFRecords as createTFRecords
 import systems.cannon as cannon 
+import systems.cannon_createTFRecords as cannon_createTFRecords
 from glob import glob as glb
 
 
@@ -35,10 +36,7 @@ def read_data(filename_queue, seq_length, shape, num_frames):
   print([seq_length, shape[0], shape[1], num_frames])
   image = tf.reshape(image, [seq_length, shape[0], shape[1], num_frames])
   image = tf.to_float(image) 
-  image = tf.div(image, 255.0) 
-  
   #Display the training images in the visualizer.
-  tf.image_summary('images', image)
   return image
 
 def _generate_image_label_batch(image, batch_size, shuffle=True):
@@ -96,6 +94,8 @@ def video_inputs(batch_size, seq_length):
   filename_queue = tf.train.string_input_producer(tfrecord_filename) 
 
   image = read_data(filename_queue, seq_length, shape, num_frames)
+  image = tf.div(image, 255.0) 
+  tf.image_summary('images', image)
 
   frames = _generate_image_label_batch(image, batch_size)
  
@@ -109,12 +109,17 @@ def cannon_inputs(batch_size, seq_length):
   Returns:
     images: Images. 4D tensor. Possible of size [batch_size, 28x28x4].
   """
-  shape = (28, 28)
-  num_frames = 4
+  num_samples = 1000000
+  
+  cannon_createTFRecords.generate_tfrecords(num_samples, seq_length)
+ 
+  tfrecord_filename = glb('../data/tfrecords_system/cannon/*num_samples_' + str(num_samples) + '_seq_length_' + str(seq_length) + '.tfrecords') 
+  
+  filename_queue = tf.train.string_input_producer(tfrecord_filename) 
 
-  k = cannon.Cannon()
-  image = k.generate_28x28(seq_length, num_frames)
-
+  image = read_data(filename_queue, seq_length, (28, 28), 4)
+  tf.image_summary('images', image)
+  
   frames = _generate_image_label_batch(image, batch_size)
 
   return frames

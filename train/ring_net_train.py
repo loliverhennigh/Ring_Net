@@ -19,10 +19,13 @@ FLAGS = tf.app.flags.FLAGS
 
 tf.app.flags.DEFINE_string('train_dir', '../checkpoints/train_store_',
                             """dir to store trained net""")
-CURRICULUM_STEPS = [1000001]
-CURRICULUM_SEQ = [3]
-CURRICULUM_BATCH_SIZE = [50]
+#tf.app.flags.DEFINE_integer('seq_len', 2,
+#                            """dir to store trained net""")
 
+CURRICULUM_STEPS = [50, 200000, 200000, 200000]
+CURRICULUM_SEQ = [1, 2, 4, 6]
+CURRICULUM_BATCH_SIZE = [50, 50, 35, 28]
+CURRICULUM_LEARNING_RATE = [1e-4, 1e-5, 1e-5]
 
 def train(iteration):
   """Train ring_net for a number of steps."""
@@ -41,8 +44,9 @@ def train(iteration):
     output_t, output_g, output_f = ring_net.unwrap(x_drop, keep_prob, CURRICULUM_SEQ[iteration]) 
     # calc error
     error = ring_net.loss(x, output_t, output_g, output_f)
+    error = tf.div(error, CURRICULUM_SEQ[iteration])
     # train hopefuly 
-    train_op = ring_net.train(error, 1e-4)
+    train_op = ring_net.train(error, CURRICULUM_LEARNING_RATE[iteration])
     
     # List of all Variables
     variables = tf.all_variables()
@@ -77,6 +81,18 @@ def train(iteration):
         print("restored file from " + ckpt.model_checkpoint_path)
       else:
         print("no chekcpoint file found, this is an error")
+      
+      uninitialized_variables = tf.report_uninitialized_variables()
+      if uninitialized_variables:
+        print("looks like there are uninitialized_variables, I will init them")
+        for i, variable in enumerate(uninitialized_variables):
+          print '----------------------------------------------'
+          print variable.name[:variable.name.index(':')]
+        tf.initialize_variables(uninitialized_variables)
+        
+        
+     
+ 
 
     # Start que runner
     tf.train.start_queue_runners(sess=sess)
@@ -86,21 +102,14 @@ def train(iteration):
     summary_writer = tf.train.SummaryWriter(FLAGS.train_dir + FLAGS.model + FLAGS.system, graph_def=graph_def)
 
     for step in xrange(CURRICULUM_STEPS[iteration]):
-      if FLAGS.system == "cannon":
-        x_batch = k.generate_28x28x4(CURRICULUM_BATCH_SIZE[iteration],CURRICULUM_SEQ[iteration])
-        _ , loss_value = sess.run([train_op, error],feed_dict={x:x_batch, keep_prob:.5, input_keep_prob:.8})
-      elif FLAGS.system == "video":
-        _ , loss_value = sess.run([train_op, error],feed_dict={keep_prob:.5, input_keep_prob:.8})
+      _ , loss_value = sess.run([train_op, error],feed_dict={keep_prob:.8, input_keep_prob:.8})
       print(loss_value)
 
       assert not np.isnan(loss_value), 'Model diverged with loss = NaN'
 
       if step%100 == 0:
-        if FLAGS.system == "cannon":
-          summary_str = sess.run(summary_op, feed_dict={x:x_batch, keep_prob:.5, input_keep_prob:.8})
-        elif FLAGS.system == "video":
-          summary_str = sess.run(summary_op, feed_dict={keep_prob:.5, input_keep_prob:.8})
-          summary_writer.add_summary(summary_str, step) 
+        summary_str = sess.run(summary_op, feed_dict={keep_prob:.8, input_keep_prob:.8})
+        summary_writer.add_summary(summary_str, step) 
 
       if step%1000 == 0:
         checkpoint_path = os.path.join(FLAGS.train_dir + FLAGS.model + FLAGS.system, 'model.ckpt')

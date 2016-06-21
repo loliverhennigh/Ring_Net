@@ -26,7 +26,7 @@ tf.app.flags.DEFINE_string('video_name', 'new_video_1.mp4',
 
 writer = animation.writers['ffmpeg'](fps=30)
 
-NUM_FRAMES = 100
+NUM_FRAMES = 80
 
 def evaluate():
   """ Eval the system"""
@@ -41,7 +41,8 @@ def evaluate():
     variables_to_restore = tf.all_variables()
     saver = tf.train.Saver(variables_to_restore)
     sess = tf.Session()
-    ckpt = tf.train.get_checkpoint_state(FLAGS.checkpoint_dir + FLAGS.model + FLAGS.system)
+    #ckpt = tf.train.get_checkpoint_state(FLAGS.checkpoint_dir + FLAGS.model + FLAGS.system)
+    ckpt = tf.train.get_checkpoint_state(FLAGS.checkpoint_dir)
     if ckpt and ckpt.model_checkpoint_path:
       saver.restore(sess, ckpt.model_checkpoint_path)
       print("restored file from " + ckpt.model_checkpoint_path)

@@ -67,6 +67,22 @@ def encoding(inputs, keep_prob):
 
   return y_1 
 
+
+def lstm_compression(inputs, hidden_state, keep_prob):
+  """Builds compressed dynamical system part of the net.
+  Args:
+    inputs: input to system
+    keep_prob: dropout layer
+  """
+  #--------- Making the net -----------
+  # x_1 -> y_1 -> y_2 -> x_2
+  # this peice y_1 -> y_2
+  if FLAGS.model == "lstm_28x28x4": 
+    y_2 = architecture.lstm_compression_28x28x4(inputs, hidden_state, keep_prob)
+  elif FLAGS.model == "lstm_84x84x4": 
+    y_2 = architecture.lstm_compression_84x84x4(inputs, hidden_state, keep_prob)
+  return y_2 
+
 def compression(inputs, keep_prob):
   """Builds compressed dynamical system part of the net.
   Args:
@@ -79,10 +95,6 @@ def compression(inputs, keep_prob):
   if FLAGS.model == "fully_connected_28x28x4": 
     y_2 = architecture.compression_28x28x4(inputs, keep_prob)
   elif FLAGS.model == "fully_connected_84x84x4": 
-    y_2 = architecture.lstm_compression_84x84x4(inputs, keep_prob)
-  elif FLAGS.model == "lstm_28x28x4": 
-    y_2 = architecture.lstm_compression_84x84x4(inputs, keep_prob)
-  elif FLAGS.model == "lstm_84x84x4": 
     y_2 = architecture.compression_84x84x4(inputs, keep_prob)
   elif FLAGS.model == "markov_28x28x4": 
     y_2 = architecture.markov_compression_28x28x4(inputs)
@@ -121,7 +133,7 @@ def unwrap(inputs, keep_prob, seq_length):
 
   if FLAGS.model == "fully_connected_28x28x4" or FLAGS.model == "fully_connected_84x84x4": 
     output_t, output_g, output_f = unwrap_helper.fully_connected_unwrap(inputs, keep_prob, seq_length)
-  elif FLAGS.model == "lstm_84x84x4":
+  elif FLAGS.model == "lstm_28x28x4" or FLAGS.model == "lstm_84x84x4":
     output_t, output_g, output_f = unwrap_helper.lstm_unwrap(inputs, keep_prob, seq_length)
   elif FLAGS.model == "markov_28x28x4": 
     output_t, output_g, output_f = unwrap_helper.markov_unwrap(inputs, keep_prob, seq_length)
@@ -139,12 +151,16 @@ def loss(inputs, output_t, output_g, output_f):
   Return:
     error: loss value
   """
-  if FLAGS.model == "fully_connected_28x28x4" or FLAGS.model == "fully_connected_84x84x4" or FLAGS.model == "lstm_84x84x4":
-    error_tf = tf.mul(50.0, tf.nn.l2_loss(output_f - output_t)) # scaling by 50 right now but this will depend on what network I am training. requires further investigation
+  if FLAGS.model == "fully_connected_28x28x4" or FLAGS.model == "fully_connected_84x84x4" or FLAGS.model == "lstm_84x84x4" or FLAGS.model == "lstm_28x28x4":
     error_xg = tf.nn.l2_loss(output_g - inputs)
-    tf.scalar_summary('error_tf', error_tf)
     tf.scalar_summary('error_xg', error_xg)
-    error = tf.cond(error_tf > error_xg, lambda: error_tf, lambda: error_xg)
+    if output_f:
+      print(output_f)
+      error_tf = tf.mul(50.0, tf.nn.l2_loss(output_f - output_t)) # scaling by 50 right now but this will depend on what network I am training. requires further investigation
+      tf.scalar_summary('error_tf', error_tf)
+      error = tf.cond(error_tf > error_xg, lambda: error_tf, lambda: error_xg)
+    else:
+      error = error_xg
   elif FLAGS.model == "markov_28x28x4": 
     error_tf = tf.mul(1.0, cross_entropy_loss(output_t, output_f))
     error_ft = tf.mul(1.0, cross_entropy_loss(output_f, output_t))
