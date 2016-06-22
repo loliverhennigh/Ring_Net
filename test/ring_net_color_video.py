@@ -2,10 +2,7 @@ import math
 
 import numpy as np
 import tensorflow as tf
-import matplotlib
-matplotlib.use("Agg")
-import matplotlib.pyplot as plt 
-import matplotlib.animation as animation 
+import cv2
 
 
 import sys
@@ -21,10 +18,14 @@ tf.app.flags.DEFINE_string('eval_dir', '../checkpoints/ring_net_eval_store',
                            """Directory where to write event logs.""")
 tf.app.flags.DEFINE_string('checkpoint_dir', '../checkpoints/train_store_',
                            """Directory where to read model checkpoints.""")
-tf.app.flags.DEFINE_string('video_name', 'new_video_1.mp4',
+tf.app.flags.DEFINE_string('video_name', 'color_video.mov',
                            """name of the video you are saving""")
 
-writer = animation.writers['ffmpeg'](fps=30)
+
+fourcc = cv2.cv.CV_FOURCC('m', 'p', '4', 'v') 
+video = cv2.VideoWriter()
+success = video.open(FLAGS.video_name, fourcc, 1, (84, 252), True)
+print(success)
 
 NUM_FRAMES = 40
 
@@ -58,16 +59,15 @@ def evaluate():
     inputs = inputs[0]
  
     # make video
-    ims_generated = []
-    fig = plt.figure()
     for step in xrange(NUM_FRAMES):
       # calc image from y_2
       print(step)
-      new_im = np.concatenate((generated_seq[step, :, :, 2].squeeze()/np.amax(generated_seq[step, :, :, 2]), inputs[step,:,:,2].squeeze()/np.amax(inputs[step,:,:,2]), (generated_seq[step, :, :, 2].squeeze() - inputs[step,:,:,2].squeeze()), axis=0)
-      ims_generated.append((plt.imshow(new_im),))
-    m_ani = animation.ArtistAnimation(fig, ims_generated, interval= 5000, repeat_delay=3000, blit=True)
-    print(FLAGS.video_name)
-    m_ani.save(FLAGS.video_name, writer=writer)
+      new_im = np.concatenate((generated_seq[step, :, :, 0:3].squeeze()/np.amax(generated_seq[step, :, :, 0:3]), inputs[step,:,:,0:3].squeeze()/np.amax(inputs[step,:,:,0:3]), generated_seq[step, :, :, 0:3].squeeze() - inputs[step, :, :, 0:3].squeeze()), axis=0)
+      new_im = np.uint8(np.abs(new_im * 255))
+      video.write(new_im)
+    print('saved to ' + FLAGS.video_name)
+    video.release()
+    cv2.destroyAllWindows()
        
 def main(argv=None):  # pylint: disable=unused-argument
   if tf.gfile.Exists(FLAGS.eval_dir):

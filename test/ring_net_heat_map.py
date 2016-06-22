@@ -63,7 +63,7 @@ def evaluate():
     for step in xrange(NUM_FRAMES):
       # calc image from y_2
       print(step)
-      new_im = np.concatenate((generated_seq[step, :, :, 2].squeeze()/np.amax(generated_seq[step, :, :, 2]), inputs[step,:,:,2].squeeze()/np.amax(inputs[step,:,:,2]), (generated_seq[step, :, :, 2].squeeze() - inputs[step,:,:,2].squeeze()), axis=0)
+      new_im = np.concatenate((generated_seq[step, :, :, 2].squeeze()/np.amax(generated_seq[step, :, :, 2]), inputs[step,:,:,2].squeeze()/np.amax(inputs[step,:,:,2])), axis=0)
       ims_generated.append((plt.imshow(new_im),))
     m_ani = animation.ArtistAnimation(fig, ims_generated, interval= 5000, repeat_delay=3000, blit=True)
     print(FLAGS.video_name)

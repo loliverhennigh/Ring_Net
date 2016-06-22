@@ -22,10 +22,10 @@ tf.app.flags.DEFINE_string('train_dir', '../checkpoints/train_store_',
 #tf.app.flags.DEFINE_integer('seq_len', 2,
 #                            """dir to store trained net""")
 
-CURRICULUM_STEPS = [500000, 200000, 200000, 200000]
+CURRICULUM_STEPS = [200000, 200000, 200000, 200000]
 CURRICULUM_SEQ = [1, 2, 4, 6]
 CURRICULUM_BATCH_SIZE = [50, 50, 35, 28]
-CURRICULUM_LEARNING_RATE = [1e-4, 1e-5, 1e-5]
+CURRICULUM_LEARNING_RATE = [1e-5, 1e-6, 1e-6, 1e-6]
 
 def train(iteration):
   """Train ring_net for a number of steps."""
@@ -103,7 +103,6 @@ def train(iteration):
 
     for step in xrange(CURRICULUM_STEPS[iteration]):
       _ , loss_value = sess.run([train_op, error],feed_dict={keep_prob:.8, input_keep_prob:.8})
-      print("loss value at " + str(loss_value))
 
       assert not np.isnan(loss_value), 'Model diverged with loss = NaN'
 
@@ -115,6 +114,7 @@ def train(iteration):
         checkpoint_path = os.path.join(FLAGS.train_dir + FLAGS.model + FLAGS.system, 'model.ckpt')
         saver.save(sess, checkpoint_path, global_step=step)  
         print("saved to " + FLAGS.train_dir + FLAGS.model + FLAGS.system)
+        print("loss value at " + str(loss_value))
 
 def main(argv=None):  # pylint: disable=unused-argument
   if tf.gfile.Exists(FLAGS.train_dir + FLAGS.model + FLAGS.system):

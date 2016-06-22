@@ -88,14 +88,14 @@ def generate_tfrecords(video_file, seq_length, shape, frame_num, color):
     writer.write(example.SerializeToString()) 
 
     # Display the resulting frame
-    cv2.imshow('frame',seq_frames[0,:,:,0:3])
+    #cv2.imshow('frame',seq_frames[0,:,:,0:3])
     if cv2.waitKey(1) & 0xFF == ord('q'):
         break
  
     # print status
     ind = ind + 1
     if ind%10000 == 0:
-      print('percent converted = ', str(100.0 * float(ind) / total_num_frames))
+      print('percent converted = ' + str(100.0 * float(ind*seq_length) / float(total_num_frames)))
 
   # When everything done, release the capture
   cap.release()
