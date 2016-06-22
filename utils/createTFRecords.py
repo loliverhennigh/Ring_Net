@@ -11,13 +11,15 @@ FLAGS = tf.app.flags.FLAGS
 def _bytes_feature(value):
   return tf.train.Feature(bytes_list=tf.train.BytesList(value=[value]))
 
-def get_converted_frame(cap, shape):
+def get_converted_frame(cap, shape, color):
   ret, frame = cap.read()
   frame = cv2.resize(frame, shape, interpolation = cv2.INTER_CUBIC)
-  frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-  return frame
+  if color:
+    return frame
+  else:
+    return cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 
-def generate_tfrecords(video_file, seq_length, shape, frame_num):
+def generate_tfrecords(video_file, seq_length, shape, frame_num, color):
   # make video cap
   cap = cv2.VideoCapture(video_file) 
 
@@ -26,7 +28,7 @@ def generate_tfrecords(video_file, seq_length, shape, frame_num):
   
   # create tf writer
   video_file_name = video_file.split('/')[-1]
-  record_filename = '../data/tfrecords/' + FLAGS.video_dir + '/' + video_file_name.replace('.', '_') + '_seq_' + str(seq_length) + '_size_' + str(shape[0]) + 'x' + str(shape[1]) + 'x' + str(frame_num) + '.tfrecords'
+  record_filename = '../data/tfrecords/' + FLAGS.video_dir + '/' + video_file_name.replace('.', '_') + '_seq_' + str(seq_length) + '_size_' + str(shape[0]) + 'x' + str(shape[1]) + 'x' + str(frame_num) + '_color_' + str(color) + '.tfrecords'
  
   # check to see if file alreay exists 
   tfrecord_filename = glb('../data/tfrecords/'+FLAGS.video_dir+'/*')
@@ -37,8 +39,12 @@ def generate_tfrecords(video_file, seq_length, shape, frame_num):
   writer = tf.python_io.TFRecordWriter(record_filename)
 
   # the stored frames
-  frames = np.zeros((shape[0], shape[1], frame_num))
-  seq_frames = np.zeros((seq_length, shape[0], shape[1], frame_num))
+  if color:
+    frames = np.zeros((shape[0], shape[1], frame_num*3))
+    seq_frames = np.zeros((seq_length, shape[0], shape[1], frame_num*3))
+  else:
+    frames = np.zeros((shape[0], shape[1], frame_num))
+    seq_frames = np.zeros((seq_length, shape[0], shape[1], frame_num))
 
   # num frames
   ind = 0
@@ -53,17 +59,27 @@ def generate_tfrecords(video_file, seq_length, shape, frame_num):
     for s in xrange(seq_length):
       if ind == 0:
         for i in xrange(frame_num):
-          frames[:,:,i] = get_converted_frame(cap, shape)
+          if color:
+            frames[:,:,i*3:(i+1)*3] = get_converted_frame(cap, shape, color)
+          else:
+            frames[:,:,i] = get_converted_frame(cap, shape, color)
       else:
+        if color:
+          frames[:,:,0:frame_num*3-3] = frames[:,:,3:frame_num*3]
+          frames[:,:,(frame_num-1)*3:frame_num*3] = get_converted_frame(cap, shape, color)
+        else:
           frames[:,:,0:frame_num-1] = frames[:,:,1:frame_num]
-          frames[:,:,frame_num-1] = get_converted_frame(cap, shape)
+          frames[:,:,frame_num-1] = get_converted_frame(cap, shape, color)
       seq_frames[s, :, :, :] = frames[:,:,:]
 
-    print(seq_frames.shape)
+    #print(seq_frames.shape)
 
     # process frame for saving
     seq_frames = np.uint8(seq_frames)
-    seq_frames_flat = seq_frames.reshape([1,seq_length*shape[0]*shape[1]*frame_num])
+    if color:
+      seq_frames_flat = seq_frames.reshape([1,seq_length*shape[0]*shape[1]*frame_num*3])
+    else:
+      seq_frames_flat = seq_frames.reshape([1,seq_length*shape[0]*shape[1]*frame_num])
     
     seq_frame_raw = seq_frames_flat.tostring()
     # create example and write it
@@ -72,7 +88,7 @@ def generate_tfrecords(video_file, seq_length, shape, frame_num):
     writer.write(example.SerializeToString()) 
 
     # Display the resulting frame
-    cv2.imshow('frame',seq_frames[0,:,:,0])
+    cv2.imshow('frame',seq_frames[0,:,:,0:3])
     if cv2.waitKey(1) & 0xFF == ord('q'):
         break
  

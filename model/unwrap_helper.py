@@ -63,7 +63,8 @@ def lstm_unwrap(inputs, keep_prob, seq_length):
   y_0 = ring_net.encoding(inputs[:, 0, :, :, :],keep_prob) 
   # do g
   x_0 = ring_net.decoding(y_0) 
-  tf.image_summary('images_encoder', x_0)
+  tf.image_summary('images_encoder', tf.slice(x_0, [0, 0, 0, 0], [1, -1, -1, 3]))
+  #tf.image_summary('images_encoder', x_0)
   # do T' 
   y_1, hidden_state = ring_net.lstm_compression(y_0, None, keep_prob) 
   # set weight sharing   
@@ -80,7 +81,8 @@ def lstm_unwrap(inputs, keep_prob, seq_length):
     output_f.append(y_f_i)
     # calc g for all in seq
     x_g_i = ring_net.decoding(y_1) 
-    tf.image_summary('images_seq_' + str(i), x_g_i)
+    #tf.image_summary('images_seq_' + str(i), tf.concat(3, tf.split(3, 12, x_g_i)[0:3]))
+    tf.image_summary('images_seq_' + str(i) , tf.slice(x_g_i, [0, 0, 0, 0], [1, -1, -1, 3]))
     output_g.append(x_g_i)
     # calc t for all in seq
     if i != (seq_length - 2):
