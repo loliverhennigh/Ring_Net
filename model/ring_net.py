@@ -163,7 +163,8 @@ def loss(inputs, output_t, output_g, output_f):
     if output_f:
       error_tf = tf.mul(50.0, tf.nn.l2_loss(output_f - output_t)) # scaling by 50 right now but this will depend on what network I am training. requires further investigation
       tf.scalar_summary('error_tf', error_tf)
-      error = tf.cond(error_tf > error_xg, lambda: error_tf, lambda: error_xg)
+      error = tf.add_n([error_tf, error_xg])
+      #error = tf.cond(error_tf > error_xg, lambda: error_tf, lambda: error_xg)
     else:
       error = error_xg
   elif FLAGS.model == "markov_28x28x4": 

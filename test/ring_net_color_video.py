@@ -24,7 +24,9 @@ tf.app.flags.DEFINE_string('video_name', 'color_video.mov',
 
 fourcc = cv2.cv.CV_FOURCC('m', 'p', '4', 'v') 
 video = cv2.VideoWriter()
+video2 = cv2.VideoWriter()
 success = video.open(FLAGS.video_name, fourcc, 1, (84, 252), True)
+success = video2.open('hidden_state.mov', fourcc, 1, (100, 100), True)
 print(success)
 
 NUM_FRAMES = 40
@@ -54,19 +56,29 @@ def evaluate():
     tf.train.start_queue_runners(sess=sess)
 
     # eval ounce
-    generated_seq, inputs = sess.run([output_g, x],feed_dict={keep_prob:1.0})
+    generated_seq, hidden_states, inputs = sess.run([output_g, output_f, x],feed_dict={keep_prob:1.0})
     generated_seq = generated_seq[0]
     inputs = inputs[0]
  
     # make video
-    for step in xrange(NUM_FRAMES):
+    hidden_im = np.zeros((100,100,3))
+    for step in xrange(NUM_FRAMES-1):
       # calc image from y_2
       print(step)
+      hidden_im = np.zeros((100,100,3))
       new_im = np.concatenate((generated_seq[step, :, :, 0:3].squeeze()/np.amax(generated_seq[step, :, :, 0:3]), inputs[step,:,:,0:3].squeeze()/np.amax(inputs[step,:,:,0:3]), generated_seq[step, :, :, 0:3].squeeze() - inputs[step, :, :, 0:3].squeeze()), axis=0)
+      hidden_im[0:32,0:32,0] = hidden_states[step,:].squeeze().reshape(32,32)
+      hidden_im[0:32,0:32,1] = hidden_states[step,:].squeeze().reshape(32,32)
+      hidden_im[0:32,0:32,2] = hidden_states[step,:].squeeze().reshape(32,32)
       new_im = np.uint8(np.abs(new_im * 255))
+      hidden_im = np.uint8(np.abs(hidden_im * 255))
+      print(hidden_im.shape)
+      print(new_im.shape)
       video.write(new_im)
+      video2.write(hidden_im)
     print('saved to ' + FLAGS.video_name)
     video.release()
+    video2.release()
     cv2.destroyAllWindows()
        
 def main(argv=None):  # pylint: disable=unused-argument
