@@ -19,10 +19,13 @@ FLAGS = tf.app.flags.FLAGS
 
 tf.app.flags.DEFINE_string('train_dir', '../checkpoints/train_store_',
                             """dir to store trained net""")
-CURRICULUM_STEPS = [1000001]
-CURRICULUM_SEQ = [3]
-CURRICULUM_BATCH_SIZE = [50]
+#tf.app.flags.DEFINE_integer('seq_len', 2,
+#                            """dir to store trained net""")
 
+CURRICULUM_STEPS = [100000, 200000, 200000, 200000]
+CURRICULUM_SEQ = [6, 4, 6, 6]
+CURRICULUM_BATCH_SIZE = [50, 50, 35, 28]
+CURRICULUM_LEARNING_RATE = [5e-5, 1e-5, 1e-5, 1e-5]
 
 def train(iteration):
   """Train ring_net for a number of steps."""
@@ -41,17 +44,18 @@ def train(iteration):
     output_t, output_g, output_f = ring_net.unwrap(x_drop, keep_prob, CURRICULUM_SEQ[iteration]) 
     # calc error
     error = ring_net.loss(x, output_t, output_g, output_f)
+    error = tf.div(error, CURRICULUM_SEQ[iteration])
     # train hopefuly 
-    train_op = ring_net.train(error, 1e-4)
+    train_op = ring_net.train(error, CURRICULUM_LEARNING_RATE[iteration])
     
     # List of all Variables
     variables = tf.all_variables()
 
     # Build a saver
     saver = tf.train.Saver(tf.all_variables())   
-    for i, variable in enumerate(variables):
-	print '----------------------------------------------'
-	print variable.name[:variable.name.index(':')]
+    #for i, variable in enumerate(variables):
+    #  print '----------------------------------------------'
+    #  print variable.name[:variable.name.index(':')]
 
     # Summary op
     summary_op = tf.merge_all_summaries()
@@ -65,19 +69,31 @@ def train(iteration):
 
     # init if this is the very time training
     if iteration == 0: 
+      print("init network from scratch")
       sess.run(init)
 
     # restore if iteration is not 0
     if iteration != 0:
       variables_to_restore = tf.all_variables()
-      saver = tf.train.Saver(variables_to_restore)
+      autoencoder_variables = [variable for i, variable in enumerate(variables_to_restore) if "RNNCell" not in variable.name[:variable.name.index(':')]]
+      rnn_variables = [variable for i, variable in enumerate(variables_to_restore) if "RNNCell" in variable.name[:variable.name.index(':')]]
+      
       ckpt = tf.train.get_checkpoint_state(FLAGS.train_dir + FLAGS.model + FLAGS.system)
-      if ckpt and ckpt.model_checkpoint_path:
-        saver.restore(sess, ckpt.model_checkpoint_path)
-        print("restored file from " + ckpt.model_checkpoint_path)
-      else:
-        print("no chekcpoint file found, this is an error")
+      autoencoder_saver = tf.train.Saver(autoencoder_variables)
+      print("restoring autoencoder part of network")
+      autoencoder_saver.restore(sess, ckpt.model_checkpoint_path)
+      print("restored file from " + ckpt.model_checkpoint_path)
 
+      if CURRICULUM_SEQ[iteration-1] == 1:
+        print("init rnn part of network from scratch")
+        rnn_init = tf.initialize_variables(rnn_variables)
+        sess.run(rnn_init)
+      else:
+        rnn_saver = tf.train.Saver(rnn_variables)
+        print("restoring rnn part of network")
+        rnn_saver.restore(sess, ckpt.model_checkpoint_path)
+        print("restored file from " + ckpt.model_checkpoint_path)
+        
     # Start que runner
     tf.train.start_queue_runners(sess=sess)
 
@@ -86,27 +102,19 @@ def train(iteration):
     summary_writer = tf.train.SummaryWriter(FLAGS.train_dir + FLAGS.model + FLAGS.system, graph_def=graph_def)
 
     for step in xrange(CURRICULUM_STEPS[iteration]):
-      if FLAGS.system == "cannon":
-        x_batch = k.generate_28x28x4(CURRICULUM_BATCH_SIZE[iteration],CURRICULUM_SEQ[iteration])
-        _ , loss_value = sess.run([train_op, error],feed_dict={x:x_batch, keep_prob:.5, input_keep_prob:.8})
-      elif FLAGS.system == "video":
-        _ , loss_value = sess.run([train_op, error],feed_dict={keep_prob:.5, input_keep_prob:.8})
-      print(loss_value)
+      _ , loss_value = sess.run([train_op, error],feed_dict={keep_prob:1.0, input_keep_prob:.8})
 
       assert not np.isnan(loss_value), 'Model diverged with loss = NaN'
 
       if step%100 == 0:
-        if FLAGS.system == "cannon":
-          summary_str = sess.run(summary_op, feed_dict={x:x_batch, keep_prob:.5, input_keep_prob:.8})
-        elif FLAGS.system == "video":
-          summary_str = sess.run(summary_op, feed_dict={keep_prob:.5, input_keep_prob:.8})
-          summary_writer.add_summary(summary_str, step) 
+        summary_str = sess.run(summary_op, feed_dict={keep_prob:1.0, input_keep_prob:.8})
+        summary_writer.add_summary(summary_str, step) 
 
       if step%1000 == 0:
         checkpoint_path = os.path.join(FLAGS.train_dir + FLAGS.model + FLAGS.system, 'model.ckpt')
         saver.save(sess, checkpoint_path, global_step=step)  
         print("saved to " + FLAGS.train_dir + FLAGS.model + FLAGS.system)
-        print(loss_value)
+        print("loss value at " + str(loss_value))
 
 def main(argv=None):  # pylint: disable=unused-argument
   if tf.gfile.Exists(FLAGS.train_dir + FLAGS.model + FLAGS.system):

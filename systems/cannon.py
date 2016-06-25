@@ -11,12 +11,12 @@ class Cannon:
 
     def __init__(self):
         # ball starts at 0.5 and 0.0
-        self.x_pos = .0 
+        self.x_pos = .1428 
         self.y_pos = .5 
         self.x_vel = random.random()
         self.y_vel = 5*random.random() 
         # you can play with this
-        self.grav = 4.0
+        self.grav = 0.0
         self.dt = .01 
         self.damp = 0.00 #probably set this to 0 for most applications
         # total steps
@@ -24,7 +24,7 @@ class Cannon:
 
     # very basic physics
     def restart(self):
-        self.x_pos = .0 
+        self.x_pos = .1428 
         self.y_pos = .5 
         self.x_vel = random.random()
         self.y_vel = 5*(random.random()-.5) 
@@ -32,7 +32,7 @@ class Cannon:
 
     # very basic physics
     def update_pos(self):
-        for i in xrange(5):
+        for i in xrange(10):
             self.x_pos = self.x_pos + self.dt * self.x_vel
             self.y_pos = self.y_pos + self.dt * self.y_vel
             self.x_vel = self.x_vel + self.dt * (self.grav - (self.damp * self.x_vel))
@@ -82,10 +82,10 @@ class Cannon:
 
         return im 
 
-    def generate_28x28(self, num_steps, frame_num):
+    def generate_28x28x4(self, num_steps, frame_num):
         if self.total_steps > 200:
             self.restart()
-
+     
         xs = np.zeros([num_steps, 28, 28, 4])
         x = np.zeros([28, 28, 4])
         for s in xrange(num_steps):

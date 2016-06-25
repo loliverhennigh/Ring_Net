@@ -4,6 +4,7 @@ import numpy as np
 import tensorflow as tf
 import utils.createTFRecords as createTFRecords
 import systems.cannon as cannon 
+import systems.cannon_createTFRecords as cannon_createTFRecords
 from glob import glob as glb
 
 
@@ -15,7 +16,7 @@ tf.app.flags.DEFINE_string('video_dir', 'goldfish',
 tf.app.flags.DEFINE_integer('min_queue_examples', 1000,
                            """ min examples to queue up""")
 
-def read_data(filename_queue, seq_length, shape, num_frames):
+def read_data(filename_queue, seq_length, shape, num_frames, color):
   """ reads data from tfrecord files.
 
   Args: 
@@ -32,13 +33,12 @@ def read_data(filename_queue, seq_length, shape, num_frames):
       'image':tf.FixedLenFeature([],tf.string)
     }) 
   image = tf.decode_raw(features['image'], tf.uint8)
-  print([seq_length, shape[0], shape[1], num_frames])
-  image = tf.reshape(image, [seq_length, shape[0], shape[1], num_frames])
+  if color:
+    image = tf.reshape(image, [seq_length, shape[0], shape[1], num_frames*3])
+  else:
+    image = tf.reshape(image, [seq_length, shape[0], shape[1], num_frames])
   image = tf.to_float(image) 
-  image = tf.div(image, 255.0) 
-  
   #Display the training images in the visualizer.
-  tf.image_summary('images', image)
   return image
 
 def _generate_image_label_batch(image, batch_size, shuffle=True):
@@ -85,17 +85,31 @@ def video_inputs(batch_size, seq_length):
   if FLAGS.model == "fully_connected_84x84x4" or FLAGS.model == "lstm_84x84x4":
     shape = (84,84)
     num_frames = 4
+    color = False
+  if FLAGS.model == "fully_connected_84x84x12" or FLAGS.model == "lstm_84x84x12":
+    shape = (84,84)
+    num_frames = 4 
+    color = True 
 
   print("begining to generate tf records")
   for f in video_filename:
-    createTFRecords.generate_tfrecords(f, seq_length, shape, num_frames)
+    createTFRecords.generate_tfrecords(f, seq_length, shape, num_frames, color)
  
   # get list of tfrecords 
-  tfrecord_filename = glb('../data/tfrecords/'+FLAGS.video_dir+'/*seq_' + str(seq_length) + '_size_' + str(shape[0]) + 'x' + str(shape[1]) + 'x' + str(num_frames) + '.tfrecords') 
+  tfrecord_filename = glb('../data/tfrecords/'+FLAGS.video_dir+'/*seq_' + str(seq_length) + '_size_' + str(shape[0]) + 'x' + str(shape[1]) + 'x' + str(num_frames) + '_color_' + str(color) + '.tfrecords') 
+  
   
   filename_queue = tf.train.string_input_producer(tfrecord_filename) 
 
-  image = read_data(filename_queue, seq_length, shape, num_frames)
+  image = read_data(filename_queue, seq_length, shape, num_frames, color)
+  
+  if color:
+    display_image = tf.split(3, 3, image)
+    tf.image_summary('images', display_image[0])
+  else:
+    tf.image_summary('images', image)
+
+  image = tf.div(image, 255.0) 
 
   frames = _generate_image_label_batch(image, batch_size)
  
@@ -109,12 +123,17 @@ def cannon_inputs(batch_size, seq_length):
   Returns:
     images: Images. 4D tensor. Possible of size [batch_size, 28x28x4].
   """
-  shape = (28, 28)
-  num_frames = 4
+  num_samples = 1000000
+  
+  cannon_createTFRecords.generate_tfrecords(num_samples, seq_length)
+ 
+  tfrecord_filename = glb('../data/tfrecords_system/cannon/*num_samples_' + str(num_samples) + '_seq_length_' + str(seq_length) + '.tfrecords') 
+  
+  filename_queue = tf.train.string_input_producer(tfrecord_filename) 
 
-  k = cannon.Cannon()
-  image = k.generate_28x28(seq_length, num_frames)
-
+  image = read_data(filename_queue, seq_length, (28, 28), 4, False)
+  tf.image_summary('images', image)
+  
   frames = _generate_image_label_batch(image, batch_size)
 
   return frames
