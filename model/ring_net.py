@@ -160,7 +160,7 @@ def loss(inputs, output_t, output_g, output_f):
   if FLAGS.model == "fully_connected_28x28x4" or FLAGS.model == "fully_connected_84x84x4" or FLAGS.model == "lstm_84x84x4" or FLAGS.model == "lstm_28x28x4" or FLAGS.model == "lstm_84x84x12":
     error_xg = tf.nn.l2_loss(output_g - inputs)
     tf.scalar_summary('error_xg', error_xg)
-    if output_f:
+    if output_f is not None:
       error_tf = tf.mul(50.0, tf.nn.l2_loss(output_f - output_t)) # scaling by 50 right now but this will depend on what network I am training. requires further investigation
       tf.scalar_summary('error_tf', error_tf)
       error = tf.add_n([error_tf, error_xg])
