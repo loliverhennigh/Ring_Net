@@ -26,7 +26,7 @@ tf.app.flags.DEFINE_float('moving_average_decay', 0.9999,
                           """The decay to use for the moving average""")
 tf.app.flags.DEFINE_float('momentum', 0.9,
                           """momentum of learning rate""")
-tf.app.flags.DEFINE_float('alpha', 0.1,
+tf.app.flags.DEFINE_float('alpha', 0.0,
                           """Leaky RElu param""")
 tf.app.flags.DEFINE_float('weight_decay', 0.0005,
                           """ """)
@@ -64,6 +64,10 @@ def encoding(inputs, keep_prob):
     y_1 = architecture.encoding_84x84x4(inputs, keep_prob)
   elif FLAGS.model == "lstm_84x84x12": 
     y_1 = architecture.encoding_84x84x12(inputs, keep_prob)
+  elif FLAGS.model == "lstm_84x84x3": 
+    y_1 = architecture.encoding_84x84x3(inputs, keep_prob)
+  elif FLAGS.model == "lstm_large_84x84x12": 
+    y_1 = architecture.encoding_large_84x84x12(inputs, keep_prob)
   elif FLAGS.model == "markov_28x28x4": 
     y_1 = architecture.markov_encoding_28x28x4(inputs, keep_prob)
 
@@ -85,6 +89,10 @@ def lstm_compression(inputs, hidden_state, keep_prob):
     y_2 = architecture.lstm_compression_84x84x4(inputs, hidden_state, keep_prob)
   elif FLAGS.model == "lstm_84x84x12": 
     y_2 = architecture.lstm_compression_84x84x12(inputs, hidden_state, keep_prob)
+  elif FLAGS.model == "lstm_84x84x3": 
+    y_2 = architecture.lstm_compression_84x84x3(inputs, hidden_state, keep_prob)
+  elif FLAGS.model == "lstm_large_84x84x12": 
+    y_2 = architecture.lstm_compression_large_84x84x12(inputs, hidden_state, keep_prob)
   return y_2 
 
 def compression(inputs, keep_prob):
@@ -119,6 +127,10 @@ def decoding(inputs):
     x_2 = architecture.decoding_84x84x4(inputs)
   elif FLAGS.model == "lstm_84x84x12": 
     x_2 = architecture.decoding_84x84x12(inputs)
+  elif FLAGS.model == "lstm_84x84x3": 
+    x_2 = architecture.decoding_84x84x3(inputs)
+  elif FLAGS.model == "lstm_large_84x84x12": 
+    x_2 = architecture.decoding_large_84x84x12(inputs)
   elif FLAGS.model == "markov_28x28x4": 
     x_2 = architecture.decoding_28x28x4(inputs)
 
@@ -139,7 +151,7 @@ def unwrap(inputs, keep_prob, seq_length):
 
   if FLAGS.model == "fully_connected_28x28x4" or FLAGS.model == "fully_connected_84x84x4": 
     output_t, output_g, output_f = unwrap_helper.fully_connected_unwrap(inputs, keep_prob, seq_length)
-  elif FLAGS.model == "lstm_28x28x4" or FLAGS.model == "lstm_84x84x4" or FLAGS.model == "lstm_84x84x12":
+  elif FLAGS.model in ("lstm_28x28x4", "lstm_84x84x4", "lstm_84x84x12", "lstm_large_84x84x12", "lstm_84x84x3"):
     output_t, output_g, output_f = unwrap_helper.lstm_unwrap(inputs, keep_prob, seq_length)
   elif FLAGS.model == "markov_28x28x4": 
     output_t, output_g, output_f = unwrap_helper.markov_unwrap(inputs, keep_prob, seq_length)
@@ -157,7 +169,7 @@ def loss(inputs, output_t, output_g, output_f):
   Return:
     error: loss value
   """
-  if FLAGS.model == "fully_connected_28x28x4" or FLAGS.model == "fully_connected_84x84x4" or FLAGS.model == "lstm_84x84x4" or FLAGS.model == "lstm_28x28x4" or FLAGS.model == "lstm_84x84x12":
+  if FLAGS.model in ("fully_connected_28x28x4", "fully_connected_84x84x4", "lstm_84x84x4", "lstm_28x28x4", "lstm_84x84x12", "lstm_large_84x84x12", "lstm_84x84x3"):
     error_xg = tf.nn.l2_loss(output_g - inputs)
     tf.scalar_summary('error_xg', error_xg)
     if output_f:

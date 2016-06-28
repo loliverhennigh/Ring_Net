@@ -11,7 +11,7 @@ from glob import glob as glb
 FLAGS = tf.app.flags.FLAGS
 
 # Constants describing the training process.
-tf.app.flags.DEFINE_string('video_dir', 'goldfish',
+tf.app.flags.DEFINE_string('video_dir', 'goldfish_no_filter',
                            """ dir containing the video files """)
 tf.app.flags.DEFINE_integer('min_queue_examples', 1000,
                            """ min examples to queue up""")
@@ -86,10 +86,14 @@ def video_inputs(batch_size, seq_length):
     shape = (84,84)
     num_frames = 4
     color = False
-  if FLAGS.model == "fully_connected_84x84x12" or FLAGS.model == "lstm_84x84x12":
+  if FLAGS.model in ("fully_connected_84x84x12", "lstm_84x84x12", "lstm_large_84x84x12"):
     shape = (84,84)
     num_frames = 4 
     color = True 
+  if FLAGS.model in ("lstm_84x84x3"):
+    shape = (84, 84)
+    num_frames = 1 
+    color = True
 
   print("begining to generate tf records")
   for f in video_filename:

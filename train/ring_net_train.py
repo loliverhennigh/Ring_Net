@@ -22,8 +22,8 @@ tf.app.flags.DEFINE_string('train_dir', '../checkpoints/train_store_',
 #tf.app.flags.DEFINE_integer('seq_len', 2,
 #                            """dir to store trained net""")
 
-CURRICULUM_STEPS = [100000, 200000, 200000, 200000]
-CURRICULUM_SEQ = [6, 4, 6, 6]
+CURRICULUM_STEPS = [50000, 50000, 200000, 200000]
+CURRICULUM_SEQ = [2, 2, 4, 6]
 CURRICULUM_BATCH_SIZE = [50, 50, 35, 28]
 CURRICULUM_LEARNING_RATE = [5e-5, 1e-5, 1e-5, 1e-5]
 
@@ -102,12 +102,12 @@ def train(iteration):
     summary_writer = tf.train.SummaryWriter(FLAGS.train_dir + FLAGS.model + FLAGS.system, graph_def=graph_def)
 
     for step in xrange(CURRICULUM_STEPS[iteration]):
-      _ , loss_value = sess.run([train_op, error],feed_dict={keep_prob:1.0, input_keep_prob:.8})
+      _ , loss_value = sess.run([train_op, error],feed_dict={keep_prob:0.9, input_keep_prob:.8})
 
       assert not np.isnan(loss_value), 'Model diverged with loss = NaN'
 
       if step%100 == 0:
-        summary_str = sess.run(summary_op, feed_dict={keep_prob:1.0, input_keep_prob:.8})
+        summary_str = sess.run(summary_op, feed_dict={keep_prob:0.9, input_keep_prob:.8})
         summary_writer.add_summary(summary_str, step) 
 
       if step%1000 == 0:
