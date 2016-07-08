@@ -172,11 +172,11 @@ def loss(inputs, output_t, output_g, output_f):
   if FLAGS.model in ("fully_connected_28x28x4", "fully_connected_84x84x4", "lstm_84x84x4", "lstm_28x28x4", "lstm_84x84x12", "lstm_large_84x84x12", "lstm_84x84x3"):
     error_xg = tf.nn.l2_loss(output_g - inputs)
     tf.scalar_summary('error_xg', error_xg)
-    if output_f is not None:
-      error_tf = tf.mul(50.0, tf.nn.l2_loss(output_f - output_t)) # scaling by 50 right now but this will depend on what network I am training. requires further investigation
+    if output_f:
+      error_tf = tf.mul(30.0, tf.nn.l2_loss(output_f - output_t)) # scaling by 50 right now but this will depend on what network I am training. requires further investigation
       tf.scalar_summary('error_tf', error_tf)
-      error = tf.add_n([error_tf, error_xg])
-      #error = tf.cond(error_tf > error_xg, lambda: error_tf, lambda: error_xg)
+      #error = tf.add_n([error_tf, error_xg])
+      error = tf.cond(error_tf > error_xg, lambda: error_tf, lambda: error_xg)
     else:
       error = error_xg
   elif FLAGS.model == "markov_28x28x4": 

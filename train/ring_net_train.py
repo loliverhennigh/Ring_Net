@@ -19,12 +19,13 @@ FLAGS = tf.app.flags.FLAGS
 
 tf.app.flags.DEFINE_string('train_dir', '../checkpoints/train_store_',
                             """dir to store trained net""")
-#tf.app.flags.DEFINE_integer('seq_len', 2,
-#                            """dir to store trained net""")
+tf.app.flags.DEFINE_integer('num_gpus', 1,
+                            """number of gpus to train on""")
 
-CURRICULUM_STEPS = [50000, 50000, 200000, 200000]
-CURRICULUM_SEQ = [2, 2, 4, 6]
-CURRICULUM_BATCH_SIZE = [50, 50, 35, 28]
+
+CURRICULUM_STEPS = [200000, 150000, 200000, 400000]
+CURRICULUM_SEQ = [1, 4, 6, 12]
+CURRICULUM_BATCH_SIZE = [30, 25, 15, 10]
 CURRICULUM_LEARNING_RATE = [5e-5, 1e-5, 1e-5, 1e-5]
 
 def train(iteration):
@@ -53,9 +54,9 @@ def train(iteration):
 
     # Build a saver
     saver = tf.train.Saver(tf.all_variables())   
-    #for i, variable in enumerate(variables):
-    #  print '----------------------------------------------'
-    #  print variable.name[:variable.name.index(':')]
+    for i, variable in enumerate(variables):
+      print '----------------------------------------------'
+      print variable.name[:variable.name.index(':')]
 
     # Summary op
     summary_op = tf.merge_all_summaries()
@@ -77,10 +78,10 @@ def train(iteration):
       variables_to_restore = tf.all_variables()
       autoencoder_variables = [variable for i, variable in enumerate(variables_to_restore) if "RNNCell" not in variable.name[:variable.name.index(':')]]
       rnn_variables = [variable for i, variable in enumerate(variables_to_restore) if "RNNCell" in variable.name[:variable.name.index(':')]]
-      
+     
       ckpt = tf.train.get_checkpoint_state(FLAGS.train_dir + FLAGS.model + FLAGS.system)
       autoencoder_saver = tf.train.Saver(autoencoder_variables)
-      print("restoring autoencoder part of network")
+      print("restoring autoencoder part of network form " + ckpt.model_checkpoint_path)
       autoencoder_saver.restore(sess, ckpt.model_checkpoint_path)
       print("restored file from " + ckpt.model_checkpoint_path)
 
@@ -102,7 +103,9 @@ def train(iteration):
     summary_writer = tf.train.SummaryWriter(FLAGS.train_dir + FLAGS.model + FLAGS.system, graph_def=graph_def)
 
     for step in xrange(CURRICULUM_STEPS[iteration]):
+      t = time.time()
       _ , loss_value = sess.run([train_op, error],feed_dict={keep_prob:0.9, input_keep_prob:.8})
+      elapsed = time.time() - t
 
       assert not np.isnan(loss_value), 'Model diverged with loss = NaN'
 
@@ -115,6 +118,7 @@ def train(iteration):
         saver.save(sess, checkpoint_path, global_step=step)  
         print("saved to " + FLAGS.train_dir + FLAGS.model + FLAGS.system)
         print("loss value at " + str(loss_value))
+        print("time per batch is " + str(elapsed))
 
 def main(argv=None):  # pylint: disable=unused-argument
   if tf.gfile.Exists(FLAGS.train_dir + FLAGS.model + FLAGS.system):

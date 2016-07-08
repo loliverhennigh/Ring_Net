@@ -25,11 +25,11 @@ tf.app.flags.DEFINE_string('video_name', 'color_video.mov',
 fourcc = cv2.cv.CV_FOURCC('m', 'p', '4', 'v') 
 video = cv2.VideoWriter()
 video2 = cv2.VideoWriter()
-success = video.open(FLAGS.video_name, fourcc, 1, (84, 252), True)
+success = video.open(FLAGS.video_name, fourcc, 4, (84, 252), True)
 success = video2.open('hidden_state.mov', fourcc, 1, (100, 100), True)
 print(success)
 
-NUM_FRAMES = 40
+NUM_FRAMES = 120 
 
 def evaluate():
   """ Eval the system"""
@@ -72,7 +72,6 @@ def evaluate():
       #hidden_im[0:32,0:32,2] = hidden_states[step,:].squeeze().reshape(32,32)
       new_im = np.uint8(np.abs(new_im * 255))
       #hidden_im = np.uint8(np.abs(hidden_im * 255))
-      print(hidden_im.shape)
       #print(new_im.shape)
       video.write(new_im)
       #video2.write(hidden_im)
