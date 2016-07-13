@@ -11,6 +11,7 @@ import systems.cannon as cn
 import systems.video as vi 
 
 import model.ring_net as ring_net
+import model.unwrap_helper_test as unwrap_helper_test 
 
 FLAGS = tf.app.flags.FLAGS
 
@@ -24,21 +25,22 @@ tf.app.flags.DEFINE_string('video_name', 'color_video.mov',
 
 fourcc = cv2.cv.CV_FOURCC('m', 'p', '4', 'v') 
 video = cv2.VideoWriter()
-video2 = cv2.VideoWriter()
-success = video.open(FLAGS.video_name, fourcc, 4, (84, 252), True)
-success = video2.open('hidden_state.mov', fourcc, 1, (100, 100), True)
-print(success)
+success = video.open(FLAGS.video_name, fourcc, 16, (84, 84), True)
 
-NUM_FRAMES = 500 
+NUM_FRAMES = 10000
 
 def evaluate():
   """ Eval the system"""
   with tf.Graph().as_default():
     # make inputs
-    x = ring_net.inputs(1, NUM_FRAMES) 
+    x = ring_net.inputs(1, 1)
     # unwrap it
     keep_prob = tf.placeholder("float")
-    output_t, output_g, output_f = ring_net.unwrap(x, keep_prob, NUM_FRAMES) 
+    y_0 = unwrap_helper_test.encoding(x, keep_prob)
+    x_1, y_1, hidden_state_1 = unwrap_helper_test.lstm_step(y_0, None,  keep_prob) 
+    # set reuse to true 
+    tf.get_variable_scope().reuse_variables()
+    x_2, y_2, hidden_state_2 = unwrap_helper_test.lstm_step(y_1, hidden_state_1,  keep_prob) 
 
     # restore network
     variables_to_restore = tf.all_variables()
@@ -56,25 +58,17 @@ def evaluate():
     tf.train.start_queue_runners(sess=sess)
 
     # eval ounce
-    generated_seq, hidden_states, inputs = sess.run([output_g, output_f, x],feed_dict={keep_prob:1.0})
-    generated_seq = generated_seq[0]
-    inputs = inputs[0]
+    generated_x_1, generated_y_1, generated_hidden_state_1 = sess.run([x_1, y_1, hidden_state_1],feed_dict={keep_prob:1.0})
+    new_im = np.uint8(np.abs(generated_x_1/np.amax(generated_x_1[0, :, :, :]) * 255))
+    video.write(new_im[0,:,:,:])
  
     # make video
-    hidden_im = np.zeros((100,100,3))
     for step in xrange(NUM_FRAMES-1):
-      # calc image from y_2
+      # continue to calc frames
       print(step)
-      #hidden_im = np.zeros((100,100,3))
-      new_im = np.concatenate((generated_seq[step, :, :, 0:3].squeeze()/np.amax(generated_seq[step, :, :, 0:3]), inputs[step,:,:,0:3].squeeze()/np.amax(inputs[step,:,:,0:3]), generated_seq[step, :, :, 0:3].squeeze() - inputs[step, :, :, 0:3].squeeze()), axis=0)
-      #hidden_im[0:32,0:32,0] = hidden_states[step,:].squeeze().reshape(32,32)
-      #hidden_im[0:32,0:32,1] = hidden_states[step,:].squeeze().reshape(32,32)
-      #hidden_im[0:32,0:32,2] = hidden_states[step,:].squeeze().reshape(32,32)
-      new_im = np.uint8(np.abs(new_im * 255))
-      #hidden_im = np.uint8(np.abs(hidden_im * 255))
-      #print(new_im.shape)
-      video.write(new_im)
-      #video2.write(hidden_im)
+      generated_x_1, generated_y_1, generated_hidden_state_1 = sess.run([x_2, y_2, hidden_state_2],feed_dict={keep_prob:1.0, y_1:generated_y_1, hidden_state_1:generated_hidden_state_1})
+      new_im = np.uint8(np.abs(generated_x_1/np.amax(generated_x_1[0, :, :, :]) * 255))
+      video.write(new_im[0,:,:,:])
     print('saved to ' + FLAGS.video_name)
     video.release()
     #video2.release()
